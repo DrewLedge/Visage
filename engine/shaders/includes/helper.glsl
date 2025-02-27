@@ -15,6 +15,20 @@ struct LightData {
     float quadraticAttenuation;
 };
 
+#ifdef RAYTRACING
+struct PrimaryPayload {
+    vec3 col;
+    uint rec;
+    float transmittance;
+};
+
+struct ShadowPayload {
+    vec3 col;
+    float factor;
+};
+
+#endif
+
 #ifdef VERT_SHADER
 vec4 getPos(mat4 proj, mat4 view, mat4 model, vec3 pos) {
     return proj * view * model * vec4(pos, 1.0f);

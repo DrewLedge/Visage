@@ -127,7 +127,7 @@ vec3 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissiv
             1                                                          // payload
         );
 
-        if (shadowPayload) continue;
+        if (shadowPayload.factor < 0.04f) continue;
 
         vec3 brdf = cookTorrance(normal, fragLightDir, viewDir, albedo, metallic, roughness);
         accumulated += (brdf * lightColor * contribution);

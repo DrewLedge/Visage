@@ -43,13 +43,8 @@ layout(buffer_reference) readonly buffer IndexBuffer {
     uint indices[];
 };
 
-struct Payload {
-    vec3 col;
-    uint rec;
-};
-
-layout(location = 0) rayPayloadInEXT Payload payload;
-layout(location = 1) rayPayloadEXT bool shadowPayload;
+layout(location = 0) rayPayloadInEXT PrimaryPayload payload;
+layout(location = 1) rayPayloadEXT ShadowPayload shadowPayload;
 hitAttributeEXT vec2 hit;
 
 #include "../includes/lightingcalc.glsl"
