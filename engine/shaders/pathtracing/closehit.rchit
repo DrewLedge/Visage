@@ -28,13 +28,6 @@ layout(set = 6, binding = 0) readonly buffer TexIndexBuffer {
     TexIndices texIndices[];
 };
 
-struct Vertex {
-    vec3 pos;
-    vec2 tex;
-    vec3 normal;
-    vec3 tangent;
-};
-
 layout(buffer_reference) readonly buffer VertBuffer {
     Vertex vertices[];
 };
@@ -48,16 +41,6 @@ layout(location = 1) rayPayloadEXT ShadowPayload shadowPayload;
 hitAttributeEXT vec2 hit;
 
 #include "../includes/lightingcalc.glsl"
-
-// barycentric interpolation for vec2 and vec3
-#define BARYCENTRIC(type)                                                 \
-    type barycentric##type(type b1, type b2, type b3, float u, float v) { \
-        float w = 1.0f - u - v;                                           \
-        return (b1 * w) + (b2 * u) + (b3 * v);                            \
-    }
-
-BARYCENTRIC(vec2)
-BARYCENTRIC(vec3)
 
 void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
     uint64_t vertAddr = texIndices[gl_InstanceCustomIndexEXT].vertexAddress;
@@ -149,8 +132,9 @@ void main() {
     // get the reflection color
     vec3 refl = payload.col * F * (1.0f - roughness);
 
-    float minShadowRayDist = 0.01f;
+    const float minShadowRayDist = 0.01f;
 
     // set the payload color
-    payload.col += calcLighting(albedo, metallicRoughness, normal, emissive, occlusion, hitPos, viewDir, frame, lightCount, minShadowRayDist) + refl;
+    vec3 direct = calcLighting(albedo, metallicRoughness, normal, emissive, occlusion, hitPos, viewDir, frame, lightCount, minShadowRayDist);
+    payload.col = direct + refl;
 }

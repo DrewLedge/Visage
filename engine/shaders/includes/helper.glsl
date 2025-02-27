@@ -1,4 +1,17 @@
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
 #define PI 3.14159265358979f
+
+struct TexIndices {
+    int albedo;
+    int metallicRoughness;
+    int normal;
+    int emissive;
+    int occlusion;
+
+    uint64_t vertexAddress;
+    uint64_t indexAddress;
+};
 
 struct LightData {
     vec4 pos;
@@ -22,13 +35,29 @@ struct LightData {
 struct PrimaryPayload {
     vec3 col;
     uint rec;
-    float transmittance;
 };
 
 struct ShadowPayload {
     vec3 col;
     float factor;
 };
+
+struct Vertex {
+    vec3 pos;
+    vec2 tex;
+    vec3 normal;
+    vec3 tangent;
+};
+
+// barycentric interpolation for vec2 and vec3
+#define BARYCENTRIC(type)                                                 \
+    type barycentric##type(type b1, type b2, type b3, float u, float v) { \
+        float w = 1.0f - u - v;                                           \
+        return (b1 * w) + (b2 * u) + (b3 * v);                            \
+    }
+
+BARYCENTRIC(vec2)
+BARYCENTRIC(vec3)
 
 #endif
 
@@ -98,18 +127,6 @@ float getFarPlane(mat4 proj) {
 #endif
 
 #ifdef FRAG_SHADER
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-
-struct TexIndices {
-    int albedo;
-    int metallicRoughness;
-    int normal;
-    int emissive;
-    int occlusion;
-
-    uint64_t vertexAddress;
-    uint64_t indexAddress;
-};
 
 // calc the geometry function for a given term using Schlick-GGX approximation
 // the geometry function accounts for the fact that some microfacets may be shadowed by others, which reduces the reflectance
