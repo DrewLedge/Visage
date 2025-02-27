@@ -16,6 +16,9 @@ struct LightData {
 };
 
 #ifdef RAYTRACING
+
+#define MAX_RAY_RECURSION 3
+
 struct PrimaryPayload {
     vec3 col;
     uint rec;

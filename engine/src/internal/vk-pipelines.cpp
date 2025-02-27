@@ -1098,7 +1098,7 @@ void VkPipelines::createRayTracingPipeline() {
     // create the pipeline
     VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-    pipelineInfo.maxPipelineRayRecursionDepth = 2;
+    pipelineInfo.maxPipelineRayRecursionDepth = cfg::MAX_RAY_RECURSION;
     pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pGroups = shaderGroups.data();

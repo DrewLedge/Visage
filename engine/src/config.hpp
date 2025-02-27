@@ -9,6 +9,8 @@ constexpr uint32_t MAX_LIGHTS = 100;
 constexpr uint32_t LIGHTS_PER_BATCH = 3;
 constexpr uint32_t MAX_LIGHT_BATCHES = MAX_LIGHTS / LIGHTS_PER_BATCH + 1;
 
+constexpr uint32_t MAX_RAY_RECURSION = 3;
+
 constexpr float NEAR_PLANE = 0.1f;
 constexpr float FAR_PLANE = 100.0f;
 
