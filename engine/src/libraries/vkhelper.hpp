@@ -310,6 +310,7 @@ struct Texture {
     uint16_t height = 1024;
     uint32_t mipLevels = 1;
     uint32_t arrayLayers = 1;
+    bool fullyOpaque = false;
 
     // consuructors
     Texture() = default;

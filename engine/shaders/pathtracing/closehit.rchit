@@ -124,16 +124,16 @@ void main() {
     // trace reflection rays
     traceRayEXT(
         TLAS[frame],
-        gl_RayFlagsOpaqueEXT,  // flags
-        0xFF,                  // cull mask
-        0,                     // sbt offset
-        0,                     // sbt stride
-        0,                     // miss index
-        hitPos,                // pos
-        0.01f,                 // min-range
-        reflectDir,            // dir
-        100.0f,                // max-range
-        0                      // payload
+        0,           // flags
+        0xFF,        // cull mask
+        0,           // sbt offset
+        0,           // sbt stride
+        0,           // miss index
+        hitPos,      // pos
+        0.01f,       // min-range
+        reflectDir,  // dir
+        100.0f,      // max-range
+        0            // payload
     );
 
     payload.rec--;
@@ -152,5 +152,5 @@ void main() {
     float minShadowRayDist = 0.01f;
 
     // set the payload color
-    payload.col = calcLighting(albedo, metallicRoughness, normal, emissive, occlusion, hitPos, viewDir, frame, lightCount, minShadowRayDist) + refl;
+    payload.col += calcLighting(albedo, metallicRoughness, normal, emissive, occlusion, hitPos, viewDir, frame, lightCount, minShadowRayDist) + refl;
 }

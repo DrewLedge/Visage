@@ -998,7 +998,7 @@ void VkPipelines::createCompositionPipeline() {
 void VkPipelines::createRayTracingPipeline() {
     m_rtPipeline.reset();
 
-    const size_t numShaders = 5;
+    constexpr size_t numShaders = 7;
 
     std::vector<std::string> shaderNames;
     shaderNames.push_back("gen.rgen");
@@ -1006,14 +1006,17 @@ void VkPipelines::createRayTracingPipeline() {
     shaderNames.push_back("shadowmiss.rmiss");
     shaderNames.push_back("closehit.rchit");
     shaderNames.push_back("shadowhit.rchit");
+    shaderNames.push_back("anyhit.rahit");
+    shaderNames.push_back("shadowanyhit.rahit");
 
     std::vector<VkShaderStageFlagBits> shaderStageFlagBits;
-    ;
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_RAYGEN_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_MISS_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_MISS_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+    shaderStageFlagBits.push_back(VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
+    shaderStageFlagBits.push_back(VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
 
     // populate the shader module and shader stages data
     std::vector<VkhShaderModule> shaderModules;
@@ -1045,15 +1048,27 @@ void VkPipelines::createRayTracingPipeline() {
     shaderGroups[2].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
     shaderGroups[2].generalShader = 2;
 
-    // ray hit group
+    // opaque ray hit group
     shaderGroups[3].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
     shaderGroups[3].generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups[3].closestHitShader = 3;
 
-    // shadow hit group
+    // opaque shadow hit group
     shaderGroups[4].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
     shaderGroups[4].generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups[4].closestHitShader = 4;
+
+    // translucent ray hit group
+    shaderGroups[5].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+    shaderGroups[5].generalShader = VK_SHADER_UNUSED_KHR;
+    shaderGroups[5].closestHitShader = 3;
+    shaderGroups[5].anyHitShader = 5;
+
+    // translucent shadow hit group
+    shaderGroups[6].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+    shaderGroups[6].generalShader = VK_SHADER_UNUSED_KHR;
+    shaderGroups[6].closestHitShader = 4;
+    shaderGroups[6].anyHitShader = 6;
 
     VkPushConstantRange genPCRange{};
     genPCRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;

@@ -61,7 +61,7 @@ void Visage::initialize() {
 
     // setup acceleration structures if raytracing is enabled
     if (m_rtEnabled) {
-        m_raytracing.init(m_swap.getMaxFrames(), commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene);
+        m_raytracing.init(m_swap.getMaxFrames(), commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene, &m_textures);
         m_raytracing.createAccelStructures();
     }
 

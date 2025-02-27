@@ -9,4 +9,7 @@
 layout(location = 0) rayPayloadInEXT PrimaryPayload payload;
 
 void main() {
+    // for testing
+    payload.col += vec3(1.0f, 0.0f, 0.0f);
+    terminateRayEXT;
 }

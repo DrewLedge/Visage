@@ -63,7 +63,7 @@ int main() {
     // configure
     engine.setMouseSensitivity(2.0f);
     engine.showDebugInfo();
-    // engine.enableRaytracing();
+    engine.enableRaytracing();
 
     // initialize engine
     engine.initialize();

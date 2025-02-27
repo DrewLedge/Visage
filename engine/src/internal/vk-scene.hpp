@@ -65,7 +65,6 @@ public:
 
     // tex indices
     [[nodiscard]] const texindices::TexIndexObj* getTexIndices() const noexcept { return m_texIndices->indices.data(); }
-    [[nodiscard]] int getTexStartIndex(size_t index) const noexcept { return m_textureStartIndices[index]; }
 
     // models
     [[nodiscard]] size_t getModelCount() const noexcept { return m_models.size(); }
@@ -126,8 +125,6 @@ private:
     // objects / meshes
     std::vector<std::unique_ptr<dvl::Mesh>> m_objects;
     std::vector<std::unique_ptr<dvl::Mesh>> m_originalObjects;
-
-    std::vector<int> m_textureStartIndices;
 
     size_t m_followPlayerIndex = -1;
     size_t m_lightCount = 0;

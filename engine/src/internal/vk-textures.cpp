@@ -148,11 +148,20 @@ void VkTextures::loadModelTextures(const tinygltf::Model* model) {
             throw std::runtime_error("Unsupported number of channels in image!");
         }
 
+        // check if the image is fully opaque or not
+        bool opaque = true;
+        for (size_t i = 0; i < image.image.size(); i += 4) {
+            if (image.image[i + 3] < 255) {
+                opaque = false;
+                break;
+            }
+        }
+
         MeshTexture meshTexture{};
         meshTexture.imageData = std::move(image.image);
         meshTexture.type = (imagesSRGB[i]) ? vkh::SRGB : vkh::UNORM;
 
-        createMeshTexture(meshTexture, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height));
+        createMeshTexture(meshTexture, static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height), opaque);
     }
 }
 
@@ -182,10 +191,11 @@ void VkTextures::createImageStagingBuffer(vkh::Texture& tex, vkh::TextureType ty
     vkh::createAndWriteHostBuffer(tex.stagingBuffer, imgData, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 }
 
-void VkTextures::createMeshTexture(const MeshTexture& meshTexture, uint32_t width, uint32_t height) {
+void VkTextures::createMeshTexture(const MeshTexture& meshTexture, uint32_t width, uint32_t height, bool opaque) {
     vkh::Texture tex{};
     tex.width = width;
     tex.height = height;
+    tex.fullyOpaque = opaque;
 
     createImageStagingBuffer(tex, meshTexture.type, meshTexture.imageData.data());
 

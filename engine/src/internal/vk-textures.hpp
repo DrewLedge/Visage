@@ -90,7 +90,7 @@ private:
     void createImageStagingBuffer(vkh::Texture& tex, vkh::TextureType type, const float* imgData);
     void createImageStagingBuffer(vkh::Texture& tex, vkh::TextureType type, const unsigned char* imgData);
 
-    void createMeshTexture(const MeshTexture& meshTexture, uint32_t width, uint32_t height);
+    void createMeshTexture(const MeshTexture& meshTexture, uint32_t width, uint32_t height, bool opaque);
 
     void getImageDataHDR(const std::string& path, vkh::Texture& t, float*& imgData);
     void createCubemapTexture(vkh::Texture& tex, const std::string& path);

@@ -53,16 +53,16 @@ void main() {
 
     traceRayEXT(
         TLAS[frame],
-        gl_RayFlagsOpaqueEXT,  // flags
-        0xFF,                  // cull mask
-        0,                     // sbt offset
-        0,                     // sbt stride
-        0,                     // miss index
-        pos,                   // pos
-        0.0f,                  // min-range
-        dir,                   // dir
-        100.0f,                // max-range
-        0                      // payload
+        0,       // flags
+        0xFF,    // cull mask
+        0,       // sbt offset
+        0,       // sbt stride
+        0,       // miss index
+        pos,     // pos
+        0.0f,    // min-range
+        dir,     // dir
+        100.0f,  // max-range
+        0        // payload
     );
 
     imageStore(rtTextures[frame], ivec2(gl_LaunchIDEXT.xy), vec4(payload.col, 1.0f));
