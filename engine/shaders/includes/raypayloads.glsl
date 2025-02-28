@@ -4,6 +4,5 @@ struct PrimaryPayload {
 };
 
 struct ShadowPayload {
-    vec3 col;
     float factor;
 };

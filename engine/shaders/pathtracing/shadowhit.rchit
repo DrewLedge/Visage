@@ -6,6 +6,5 @@
 layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
-    shadowPayload.col = vec3(0.0f, 0.0f, 0.0f);
     shadowPayload.factor = 0.0f;
 }

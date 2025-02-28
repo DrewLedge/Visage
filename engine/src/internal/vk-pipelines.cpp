@@ -1068,7 +1068,7 @@ void VkPipelines::createRayTracingPipeline() {
     shaderGroups[6].type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
     shaderGroups[6].generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups[6].closestHitShader = 4;
-    shaderGroups[6].anyHitShader = 6;
+    shaderGroups[6].anyHitShader = 5;
 
     VkPushConstantRange genPCRange{};
     genPCRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;

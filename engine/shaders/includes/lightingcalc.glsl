@@ -111,16 +111,16 @@ vec3 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissiv
 
         traceRayEXT(
             TLAS[frame],
-            gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,  // flags
-            0xFF,                                                      // cull mask
-            1,                                                         // sbt offset
-            0,                                                         // sbt stride
-            1,                                                         // miss index
-            fragPos,                                                   // pos
-            minShadowRayDist,                                          // min-range
-            fragLightDir,                                              // dir
-            maxShadowRayDist,                                          // max-range
-            1                                                          // payload
+            0,                 // flags
+            0xFF,              // cull mask
+            1,                 // sbt offset
+            0,                 // sbt stride
+            1,                 // miss index
+            fragPos,           // pos
+            minShadowRayDist,  // min-range
+            fragLightDir,      // dir
+            maxShadowRayDist,  // max-range
+            1                  // payload
         );
 
         if (shadowPayload.factor < 0.04f) continue;
