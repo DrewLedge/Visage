@@ -2,10 +2,7 @@
 
 #extension GL_EXT_ray_tracing : require
 
-#define RAYTRACING
-
-#include "../includes/helper.glsl"
-
+#include "../includes/raypayloads.glsl"
 layout(location = 0) rayPayloadInEXT PrimaryPayload payload;
 
 layout(set = 2, binding = 0) uniform samplerCube cubeMap;

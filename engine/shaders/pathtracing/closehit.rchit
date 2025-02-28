@@ -4,19 +4,17 @@
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_buffer_reference : require
 
+#define MAX_RAY_RECURSION 3
 #define RAYTRACING
-#define FRAG_SHADER
-#define VERT_SHADER
 
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
-
-#include "../includes/helper.glsl"
 
 layout(push_constant, std430) uniform pc {
     layout(offset = 4) int frame;
     int lightCount;
 };
 
+#include "../includes/light.glsl"
 layout(set = 1, binding = 0) readonly buffer LightBuffer {
     LightData lights[];
 }
@@ -24,23 +22,17 @@ lssbo[];
 
 layout(set = 5, binding = 0) uniform accelerationStructureEXT TLAS[];
 
+#include "../includes/texindices.glsl"
 layout(set = 6, binding = 0) readonly buffer TexIndexBuffer {
     TexIndices texIndices[];
 };
 
-layout(buffer_reference) readonly buffer VertBuffer {
-    Vertex vertices[];
-};
-
-layout(buffer_reference) readonly buffer IndexBuffer {
-    uint indices[];
-};
+#include "../includes/meshdata.glsl"
+#include "../includes/raypayloads.glsl"
 
 layout(location = 0) rayPayloadInEXT PrimaryPayload payload;
 layout(location = 1) rayPayloadEXT ShadowPayload shadowPayload;
 hitAttributeEXT vec2 hit;
-
-#include "../includes/lightingcalc.glsl"
 
 void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
     uint64_t vertAddr = texIndices[gl_InstanceCustomIndexEXT].vertexAddress;
@@ -71,6 +63,10 @@ void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
     normal = barycentricvec3(normals[0], normals[1], normals[2], u, v);
     tangent = barycentricvec3(tangents[0], tangents[1], tangents[2], u, v);
 }
+
+#include "../includes/helper.glsl"
+#include "../includes/lightingcalc.glsl"
+#include "../includes/loadtextures.glsl"
 
 void main() {
     if (payload.rec >= MAX_RAY_RECURSION) {

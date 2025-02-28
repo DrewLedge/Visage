@@ -2,10 +2,7 @@
 
 #extension GL_EXT_ray_tracing : require
 
-#define RAYTRACING
-
-#include "../includes/helper.glsl"
-
+#include "../includes/raypayloads.glsl"
 layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {

@@ -1,7 +1,3 @@
-#ifdef RAYTRACING
-#extension GL_EXT_ray_tracing : require
-#endif
-
 float getAttenuation(int lightIndex, int frame, vec3 lightPos, vec3 fragPos) {
     float constAttenuation = lssbo[frame].lights[lightIndex].constantAttenuation;
     float linAttenuation = lssbo[frame].lights[lightIndex].linearAttenuation;

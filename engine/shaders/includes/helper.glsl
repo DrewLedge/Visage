@@ -1,67 +1,5 @@
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-
 #define PI 3.14159265358979f
 
-struct TexIndices {
-    int albedo;
-    int metallicRoughness;
-    int normal;
-    int emissive;
-    int occlusion;
-
-    uint64_t vertexAddress;
-    uint64_t indexAddress;
-};
-
-struct LightData {
-    vec4 pos;
-    vec4 color;
-    vec4 target;
-
-    mat4 vp;
-
-    float intensity;
-    float innerConeAngle;
-    float outerConeAngle;
-    float constantAttenuation;
-    float linearAttenuation;
-    float quadraticAttenuation;
-};
-
-#ifdef RAYTRACING
-
-#define MAX_RAY_RECURSION 3
-
-struct PrimaryPayload {
-    vec3 col;
-    uint rec;
-};
-
-struct ShadowPayload {
-    vec3 col;
-    float factor;
-};
-
-struct Vertex {
-    vec3 pos;
-    vec2 tex;
-    vec3 normal;
-    vec3 tangent;
-};
-
-// barycentric interpolation for vec2 and vec3
-#define BARYCENTRIC(type)                                                 \
-    type barycentric##type(type b1, type b2, type b3, float u, float v) { \
-        float w = 1.0f - u - v;                                           \
-        return (b1 * w) + (b2 * u) + (b3 * v);                            \
-    }
-
-BARYCENTRIC(vec2)
-BARYCENTRIC(vec3)
-
-#endif
-
-#ifdef VERT_SHADER
 vec4 getPos(mat4 proj, mat4 view, mat4 model, vec3 pos) {
     return proj * view * model * vec4(pos, 1.0f);
 }
@@ -123,10 +61,6 @@ float getNearPlane(mat4 proj) {
 float getFarPlane(mat4 proj) {
     return -proj[3][2] / (proj[2][2] - 1.0f);
 }
-
-#endif
-
-#ifdef FRAG_SHADER
 
 // calc the geometry function for a given term using Schlick-GGX approximation
 // the geometry function accounts for the fact that some microfacets may be shadowed by others, which reduces the reflectance
@@ -229,41 +163,3 @@ vec3 getViewDir(vec3 fragWorldPos, mat4 iview) {
     vec3 camPos = vec3(iview[3]);
     return normalize(camPos - fragWorldPos);
 }
-
-void getTextures(TexIndices texIndices, vec2 uv, mat3 tbn, out vec4 albedo, out vec4 metallicRoughness, out vec3 normal, out vec3 emissive, out float occlusion) {
-    bool albedoExists = (texIndices.albedo >= 0);
-    bool metallicRoughnessExists = (texIndices.metallicRoughness >= 0);
-    bool normalExists = (texIndices.normal >= 0);
-    bool emissiveExists = (texIndices.emissive >= 0);
-    bool occlusionExists = (texIndices.occlusion >= 0);
-
-    // default values
-    albedo = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // solid red if missing
-    metallicRoughness = vec4(0.0f, 0.5f, 0.0f, 1.0f);
-    normal = vec3(0.0f);
-    emissive = vec3(0.0f);
-    occlusion = 1.0f;
-
-    if (albedoExists) {
-        albedo = texture(texSamplers[texIndices.albedo], uv);
-    }
-
-    if (metallicRoughnessExists) {
-        metallicRoughness = texture(texSamplers[texIndices.metallicRoughness], uv);
-    }
-
-    if (normalExists) {
-        normal = (texture(texSamplers[texIndices.normal], uv).rgb * 2.0f - 1.0f);
-        normal = normalize(tbn * normal);
-    }
-
-    if (emissiveExists) {
-        emissive = texture(texSamplers[texIndices.emissive], uv).rgb;
-    }
-
-    if (occlusionExists) {
-        occlusion = texture(texSamplers[texIndices.occlusion], uv).r * metallicRoughness.b;
-    }
-}
-
-#endif

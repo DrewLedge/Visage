@@ -2,10 +2,6 @@
 
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define VERT_SHADER
-
-#include "../includes/helper.glsl"
-
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;
@@ -33,6 +29,8 @@ layout(set = 2, binding = 0) uniform CamBufferObject {
     mat4 iproj;
 }
 CamUBO[];
+
+#include "../includes/helper.glsl"
 
 void main() {
     mat4 proj = CamUBO[frame].proj;

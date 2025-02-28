@@ -3,10 +3,6 @@
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_multiview : require
 
-#define VERT_SHADER
-
-#include "../includes/helper.glsl"
-
 layout(location = 0) in vec3 inPosition;
 
 // individual rows of the instanced model matrix
@@ -17,6 +13,7 @@ layout(location = 4) in vec4 inModel4;
 
 layout(location = 0) out uint outDiscard;
 
+#include "../includes/light.glsl"
 layout(set = 0, binding = 0) readonly buffer LightBuffer {
     LightData lights[];
 }
@@ -28,6 +25,8 @@ layout(push_constant, std430) uniform pc {
     int lightCount;
     int lightsPerBatch;
 };
+
+#include "../includes/helper.glsl"
 
 void main() {
     int lightIndex = (batch * lightsPerBatch) + gl_ViewIndex;
