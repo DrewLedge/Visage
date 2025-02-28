@@ -74,7 +74,7 @@ void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
 
 void main() {
     if (payload.rec >= MAX_RAY_RECURSION) {
-        payload.col = vec3(0);
+        payload.col = vec3(0.0f);
         return;
     }
 

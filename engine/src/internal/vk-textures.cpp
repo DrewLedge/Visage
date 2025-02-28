@@ -150,8 +150,8 @@ void VkTextures::loadModelTextures(const tinygltf::Model* model) {
 
         // check if the image is fully opaque or not
         bool opaque = true;
-        for (size_t i = 0; i < image.image.size(); i += 4) {
-            if (image.image[i + 3] < 255) {
+        for (size_t j = 0; j < image.image.size(); j += 4) {
+            if (image.image[j + 3] < 255) {
                 opaque = false;
                 break;
             }

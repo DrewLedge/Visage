@@ -64,9 +64,8 @@ void main() {
     // get albedo
     vec4 albedo = getAlbedo(texIndices[gl_InstanceCustomIndexEXT], uv);
 
-    // ignore intersection if not opaque
-    if (albedo.a < 1.0f) {
+    // if translucent ignore intersection
+    if (albedo.a < 0.9f) {
         ignoreIntersectionEXT;
-        return;
     }
 }
