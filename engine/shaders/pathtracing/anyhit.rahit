@@ -32,9 +32,6 @@ vec2 getUV(uint index) {
     vec2 uv1 = vertBuffer.vertices[i1].tex;
     vec2 uv2 = vertBuffer.vertices[i2].tex;
 
-    float u = hit.x;
-    float v = hit.y;
-
     return barycentricvec2(uv0, uv1, uv2, hit.x, hit.y);
 }
 

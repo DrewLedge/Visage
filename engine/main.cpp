@@ -39,7 +39,7 @@ void handleKeyboardInput(visage::Visage& engine, bool& mouseLocked) {
 
     // spawn light
     if (engine.isKeyReleased(GLFW_KEY_E)) {
-        engine.createLight(5.0f);
+        engine.createLightAtCamera(5.0f);
     }
 
     // scene reset
@@ -52,7 +52,7 @@ int main() {
     visage::Visage engine;
 
     // load models
-    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 200.0f);
+    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 30.0f);
 
     // load skybox
     engine.loadSkybox("night-sky.hdr");
@@ -63,7 +63,7 @@ int main() {
     // configure
     engine.setMouseSensitivity(2.0f);
     engine.showDebugInfo();
-    engine.enableRaytracing();
+    // engine.enableRaytracing();
 
     // initialize engine
     engine.initialize();
