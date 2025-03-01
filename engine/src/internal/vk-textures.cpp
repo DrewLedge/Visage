@@ -79,13 +79,6 @@ void VkTextures::loadSkybox(const std::string& path) {
     vkh::createSampler(m_skyboxCubemap.sampler, m_skyboxCubemap.mipLevels, vkh::CUBEMAP);
 }
 
-bool VkTextures::newShadowBatchNeeded(size_t prevLightCount, size_t newLightCount) {
-    size_t prevBatches = prevLightCount / cfg::LIGHTS_PER_BATCH + 1;
-    size_t newBatches = newLightCount / cfg::LIGHTS_PER_BATCH + 1;
-
-    return (newBatches > prevBatches);
-}
-
 void VkTextures::createNewShadowBatch() {
     VkExtent2D extent{cfg::SHADOW_WIDTH, cfg::SHADOW_HEIGHT};
 
@@ -100,7 +93,6 @@ void VkTextures::createNewShadowBatch() {
 
 void VkTextures::resetShadowTextures() {
     m_shadow.clear();
-    createNewShadowBatch();
 }
 
 void VkTextures::loadModelTextures(const tinygltf::Model* model) {

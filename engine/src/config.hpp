@@ -6,7 +6,7 @@ namespace cfg {
 constexpr uint32_t MAX_OBJECTS = 5000;
 
 constexpr uint32_t MAX_LIGHTS = 100;
-constexpr uint32_t LIGHTS_PER_BATCH = 3;
+constexpr uint32_t LIGHTS_PER_BATCH = 4;
 constexpr uint32_t MAX_LIGHT_BATCHES = MAX_LIGHTS / LIGHTS_PER_BATCH + 1;
 
 constexpr uint32_t MAX_RAY_RECURSION = 3;

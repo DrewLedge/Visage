@@ -32,7 +32,7 @@ public:
     [[nodiscard]] VkResult drawFrame(uint32_t currentFrame, float fps);
 
     // lights
-    void reallocateLights();
+    void freeLights();
     void addShadowFrameBuffer(const vkh::Texture& tex);
     void addShadowCommandBuffers();
 

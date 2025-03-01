@@ -50,9 +50,8 @@ public:
 
     // lights
     void createLight(const dml::vec3& pos, const dml::vec3& target, float range);
-    void createPlayerLight(float range);
-    void setPlayerLight(size_t index);
-    void resetLights();
+    void setPlayerLight(int index);
+    void removeLights();
 
 public:
     // cam
@@ -86,9 +85,12 @@ public:
     // lights
     [[nodiscard]] const light::LightDataObject* getRawLightData() const noexcept { return m_lights->raw.data(); }
     [[nodiscard]] size_t getLightCount() const noexcept { return m_lightCount; }
+    [[nodiscard]] bool lightsExist() const noexcept { return (m_lightCount > 0); }
+
     [[nodiscard]] const light::LightDataObject* getLight(size_t index) const noexcept { return &m_lights->raw[index]; }
     [[nodiscard]] const dml::mat4& getLightVP(size_t index) const noexcept { return m_lights->raw[index].viewProj; }
-    [[nodiscard]] const size_t getShadowBatchCount() const noexcept { return getLightCount() / cfg::LIGHTS_PER_BATCH + 1; }
+    [[nodiscard]] const size_t getShadowBatchCount() const noexcept { return (m_lightCount / cfg::LIGHTS_PER_BATCH) + (m_lightCount > 0 ? 1 : 0); }
+
     // buffers
     [[nodiscard]] const vkh::BufferObj& getVertBuffer() const noexcept { return m_vertBuffer; }
     [[nodiscard]] const vkh::BufferObj& getIndexBuffer() const noexcept { return m_indBuffer; }
@@ -126,7 +128,7 @@ private:
     std::vector<std::unique_ptr<dvl::Mesh>> m_objects;
     std::vector<std::unique_ptr<dvl::Mesh>> m_originalObjects;
 
-    size_t m_followPlayerIndex = -1;
+    int m_followPlayerIndex = -1;
     size_t m_lightCount = 0;
 
     vkh::BufferObj m_vertBuffer{};

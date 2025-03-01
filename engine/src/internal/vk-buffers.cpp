@@ -40,7 +40,10 @@ void VkBuffers::update(uint32_t currentFrame) {
     size_t lightCount = m_scene->getLightCount();
     size_t objectCount = m_scene->getObjectCount();
 
-    vkh::writeBuffer(m_lightBuffers[currentFrame].mem, lightData, sizeof(light::LightDataObject) * lightCount);
+    if (lightCount > 0) {
+        vkh::writeBuffer(m_lightBuffers[currentFrame].mem, lightData, sizeof(light::LightDataObject) * lightCount);
+    }
+
     vkh::writeBuffer(m_camBuffers[currentFrame].mem, camMatrices, sizeof(cam::CamMatrices));
     vkh::writeBuffer(m_objInstanceBuffers[currentFrame].mem, objectInstances, sizeof(instancing::ObjectInstance) * objectCount);
 }

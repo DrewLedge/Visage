@@ -52,8 +52,8 @@ public:
     // scene modification
     void copyModel(const std::string& fileName);
 
-    void createLight(float range);
     void createLight(const dml::vec3& pos, const dml::vec3& target, float range);
+    void createLightAtCamera(float range);
     void createPlayerLight(float range);
 
     void resetScene();

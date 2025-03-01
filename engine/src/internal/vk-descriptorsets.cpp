@@ -85,6 +85,7 @@ void VkDescriptorSets::update(bool updateLights, const VkAccelerationStructureKH
         if (updateLights) {
             size_t batchCount = m_scene->getShadowBatchCount();
             m_shadowInfos.reserve(m_maxFrames * batchCount);
+
             for (size_t i = 0; i < batchCount; i++) {
                 for (size_t j = 0; j < m_maxFrames; j++) {
                     const vkh::Texture& tex = m_textures->getShadowTex(i, j);
@@ -117,7 +118,12 @@ void VkDescriptorSets::update(bool updateLights, const VkAccelerationStructureKH
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[TLAS].set, 0, m_sets[TLAS].bindings[0].descriptorType, &tlasInfo, m_maxFrames));
     } else {
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[DEFERRED].set, 0, m_sets[DEFERRED].bindings[0].descriptorType, deferredImageInfo.data(), deferredImageInfo.size()));
-        if (updateLights) descriptorWrites.push_back(vkh::createDSWrite(m_sets[SHADOWMAP].set, 0, m_sets[SHADOWMAP].bindings[0].descriptorType, m_shadowInfos.data(), m_shadowInfos.size()));
+
+        // if any lights are loaded
+        if (updateLights && m_shadowInfos.size() > 0) {
+            descriptorWrites.push_back(vkh::createDSWrite(m_sets[SHADOWMAP].set, 0, m_sets[SHADOWMAP].bindings[0].descriptorType, m_shadowInfos.data(), m_shadowInfos.size()));
+        }
+
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[CAMDEPTH].set, 0, m_sets[CAMDEPTH].bindings[0].descriptorType, depthInfo.data(), depthInfo.size()));
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[COMPTEXTURES].set, 0, m_sets[COMPTEXTURES].bindings[0].descriptorType, compositionPassImageInfo.data(), compositionPassImageInfo.size()));
     }

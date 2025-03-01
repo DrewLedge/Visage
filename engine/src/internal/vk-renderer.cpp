@@ -46,15 +46,18 @@ void VkRenderer::VkRenderer::createCommandBuffers() {
 
 void VkRenderer::VkRenderer::createFrameBuffers(bool shadow) {
     if (!m_rtEnabled) {
-        m_deferredFB.resize(m_swap->getMaxFrames());
-        m_shadowFB.reserve(m_swap->getMaxFrames() * m_scene->getShadowBatchCount());
-        m_lightingFB.resize(m_swap->getMaxFrames());
-        m_wboitFB.resize(m_swap->getMaxFrames());
+        uint32_t maxFrames = m_swap->getMaxFrames();
+        size_t shadowBatchCount = m_scene->getShadowBatchCount();
 
-        // shadowmap framebuffers
+        m_deferredFB.resize(maxFrames);
+        m_shadowFB.reserve(maxFrames * shadowBatchCount);
+        m_lightingFB.resize(maxFrames);
+        m_wboitFB.resize(maxFrames);
+
+        // create shadowmap framebuffers
         if (shadow) {
-            for (size_t j = 0; j < m_scene->getShadowBatchCount(); j++) {
-                for (size_t i = 0; i < m_swap->getMaxFrames(); i++) {
+            for (size_t j = 0; j < shadowBatchCount; j++) {
+                for (size_t i = 0; i < maxFrames; i++) {
                     VkhFramebuffer fb{};
                     vkh::createFB(m_pipe->getShadowPipe().renderPass, fb, m_textures->getShadowTex(j, i).imageView.p(), 1, cfg::SHADOW_WIDTH, cfg::SHADOW_HEIGHT);
                     m_shadowFB.push_back(fb);
@@ -62,7 +65,7 @@ void VkRenderer::VkRenderer::createFrameBuffers(bool shadow) {
             }
         }
 
-        for (size_t i = 0; i < m_swap->getMaxFrames(); i++) {
+        for (size_t i = 0; i < maxFrames; i++) {
             // deferred pass framebuffers
             std::array<VkImageView, 5> attachments{};
             for (size_t j = 0; j < 4; j++) {
@@ -113,8 +116,13 @@ VkResult VkRenderer::drawFrame(uint32_t currentFrame, float fps) {
 
     if (!m_rtEnabled) {
         submitInfos.push_back(vkh::createSubmitInfo(m_deferredCB.primary[m_currentFrame].p(), 1, &waitStage, m_imageAvailableSemaphores[m_currentFrame], m_deferredSemaphores[m_currentFrame]));
-        submitInfos.push_back(vkh::createSubmitInfo(m_frameShadowCommandBuffers.data(), m_frameShadowCommandBuffers.size(), &waitStage, m_deferredSemaphores[m_currentFrame], m_shadowSemaphores[m_currentFrame]));
-        submitInfos.push_back(vkh::createSubmitInfo(m_lightingCB.primary[m_currentFrame].p(), 1, &waitStage, m_shadowSemaphores[m_currentFrame], m_wboitSemaphores[m_currentFrame]));
+
+        // dont submit shadow command buffers if no lights exist
+        bool lightsExist = m_scene->lightsExist();
+        if (lightsExist) submitInfos.push_back(vkh::createSubmitInfo(m_frameShadowCommandBuffers.data(), m_frameShadowCommandBuffers.size(), &waitStage, m_deferredSemaphores[m_currentFrame], m_shadowSemaphores[m_currentFrame]));
+        VkhSemaphore lightingWaitSemaphore = lightsExist ? m_shadowSemaphores[m_currentFrame] : m_deferredSemaphores[m_currentFrame];
+
+        submitInfos.push_back(vkh::createSubmitInfo(m_lightingCB.primary[m_currentFrame].p(), 1, &waitStage, lightingWaitSemaphore, m_wboitSemaphores[m_currentFrame]));
         submitInfos.push_back(vkh::createSubmitInfo(m_wboitCB.primary[m_currentFrame].p(), 1, &waitStage, m_wboitSemaphores[m_currentFrame], m_compSemaphores[m_currentFrame]));
         submitInfos.push_back(vkh::createSubmitInfo(m_compCB.primary[m_currentFrame].p(), 1, &waitStage, m_compSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame]));
     } else {
@@ -140,8 +148,8 @@ VkResult VkRenderer::drawFrame(uint32_t currentFrame, float fps) {
     return vkQueuePresentKHR(m_setup->pQueue(), &presentInfo);
 }
 
-void VkRenderer::reallocateLights() {
-    allocateCommandBuffers(m_shadowCB, m_scene->getShadowBatchCount() * m_swap->getMaxFrames(), 0);
+void VkRenderer::freeLights() {
+    allocateCommandBuffers(m_shadowCB, 0, 0);
     m_shadowFB.clear();
     m_shadowFB.reserve(m_swap->getMaxFrames());
     m_frameShadowCommandBuffers.clear();
@@ -194,9 +202,11 @@ void VkRenderer::createSemaphores() {
 void VkRenderer::VkRenderer::allocateCommandBuffers(commandbuffers::CommandBufferSet& cmdBuffers, size_t primaryCount, size_t secondaryCount) {
     cmdBuffers.primary.reserveClear(primaryCount);
 
-    for (size_t i = 0; i < primaryCount; i++) {
-        cmdBuffers.primary.pools.push_back(vkh::createCommandPool(m_setup->getGraphicsFamily(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
-        cmdBuffers.primary.buffers.push_back(vkh::allocateCommandBuffers(cmdBuffers.primary.pools[i]));
+    if (primaryCount) {
+        for (size_t i = 0; i < primaryCount; i++) {
+            cmdBuffers.primary.pools.push_back(vkh::createCommandPool(m_setup->getGraphicsFamily(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
+            cmdBuffers.primary.buffers.push_back(vkh::allocateCommandBuffers(cmdBuffers.primary.pools[i]));
+        }
     }
 
     if (secondaryCount) {
@@ -568,7 +578,11 @@ void VkRenderer::VkRenderer::recordAllCommandBuffers() {
         recordRTCommandBuffers();
     } else {
         recordDeferredCommandBuffers();
-        recordShadowCommandBuffers();
+
+        if (m_scene->lightsExist()) {
+            recordShadowCommandBuffers();
+        }
+
         recordLightingCommandBuffers();
         recordWBOITCommandBuffers();
     }

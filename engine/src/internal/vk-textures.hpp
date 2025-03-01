@@ -22,7 +22,6 @@ public:
     void loadMeshTextures();
     void loadSkybox(const std::string& path);
 
-    bool newShadowBatchNeeded(size_t prevLightCount, size_t newLightCount);
     void createNewShadowBatch();
     void resetShadowTextures();
 

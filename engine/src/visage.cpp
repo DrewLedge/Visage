@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "config.hpp"
+
 namespace visage {
 void Visage::loadModel(const std::string& file, const dml::vec3& pos, const dml::vec3& scale, const dml::vec4& quat) {
     if (m_engineInitialized) {
@@ -168,76 +170,66 @@ void Visage::copyModel(const std::string& fileName) {
     }
 }
 
-void Visage::createLight(float range) {
+void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float range) {
+    size_t currentLightCount = m_scene.getLightCount();
+    size_t batchCount = m_scene.getShadowBatchCount();
+    size_t newLightCount = currentLightCount + 1;
+
+    // limit lights spawned
+    if (newLightCount > cfg::MAX_LIGHTS) return;
+
+    m_scene.createLight(pos, target, range);
+
+    // if the engine is initialzed, raytracing is disabled, and a new shadow batch needs to be created
+    bool newShadowBatch = (currentLightCount == 0) ? true : (newLightCount % cfg::LIGHTS_PER_BATCH == 0);
+    if (m_engineInitialized && !m_rtEnabled && newShadowBatch) {
+        vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
+
+        m_textures.createNewShadowBatch();
+
+        for (size_t i = 0; i < m_swap.getMaxFrames(); i++) {
+            vkh::Texture s = m_textures.getShadowTex(batchCount, i);
+
+            m_renderer.addShadowFrameBuffer(s);
+            m_renderer.addShadowCommandBuffers();
+            m_descs.addShadowInfo(vkh::createDSImageInfo(s.imageView, s.sampler));
+        }
+
+        m_descs.updateLightDS();
+    }
+}
+
+void Visage::createLightAtCamera(float range) {
     dml::vec3 pos = m_scene.getCamWorldPos();
     dml::vec3 target = pos + m_scene.getCamForward();
 
     createLight(pos, target, range);
 }
 
-void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float range) {
-    size_t currentLightCount = m_scene.getLightCount();
-    size_t newLightCount = currentLightCount + 1;
-    if (newLightCount > cfg::MAX_LIGHTS) return;
-
-    if (m_engineInitialized) {
-        vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
-
-        if (!m_rtEnabled && m_textures.newShadowBatchNeeded(currentLightCount, newLightCount)) {
-            m_textures.createNewShadowBatch();
-
-            for (size_t i = 0; i < m_swap.getMaxFrames(); i++) {
-                vkh::Texture s = m_textures.getShadowTex(m_scene.getShadowBatchCount(), i);
-
-                m_renderer.addShadowFrameBuffer(s);
-                m_renderer.addShadowCommandBuffers();
-                m_descs.addShadowInfo(vkh::createDSImageInfo(s.imageView, s.sampler));
-            }
-
-            m_descs.updateLightDS();
-        }
-    }
-
-    m_scene.createLight(pos, target, range);
-}
-
 void Visage::createPlayerLight(float range) {
-    m_scene.createPlayerLight(range);
+    createLightAtCamera(range);
+    m_scene.setPlayerLight(static_cast<int>(m_scene.getLightCount()) - 1);
 }
 
 void Visage::resetScene() {
     vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
 
-    m_scene.resetLights();
-
-    uint32_t maxFrames = m_swap.getMaxFrames();
-
+    // remove lights
+    m_scene.removeLights();
     if (!m_rtEnabled) {
-        m_renderer.reallocateLights();
-
-        m_descs.clearShadowInfos(maxFrames);
-
+        m_renderer.freeLights();
+        m_descs.clearShadowInfos();
         m_textures.resetShadowTextures();
-
-        for (size_t i = 0; i < maxFrames; i++) {
-            const vkh::Texture& tex = m_textures.getShadowTex(m_scene.getShadowBatchCount() - 1, i);
-
-            m_descs.addShadowInfo(vkh::createDSImageInfo(tex.imageView, tex.sampler));
-            m_renderer.addShadowFrameBuffer(tex);
-        }
-
-        m_descs.updateLightDS();
     }
 
+    // reset objects
     m_scene.resetObjects();
-
-    if (m_rtEnabled) {
-        m_raytracing.updateTLAS(m_currentFrame, true);
-    }
-
     m_scene.calcTexIndices();
     m_buffers.createTexIndicesBuffer();
     m_buffers.updateSceneIndirectCommandsBuffer();
+    if (m_rtEnabled) {
+        m_raytracing.updateTLAS(m_currentFrame, true);
+    }
 }
 
 void Visage::initGLFW() {
