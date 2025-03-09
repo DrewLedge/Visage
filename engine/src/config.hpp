@@ -27,5 +27,6 @@ const std::string SOURCE_DIR(PROJECT_SOURCE_DIR);
 const std::string SHADER_DIR = SOURCE_DIR + "/shaders/compiled/";
 const std::string MODEL_DIR = SOURCE_DIR + "/assets/models/";
 const std::string SKYBOX_DIR = SOURCE_DIR + "/assets/skyboxes/";
+const std::string NOISE_DIR = SOURCE_DIR + "/assets/noise/";
 const std::string FONT_DIR = SOURCE_DIR + "/assets/fonts/";
 }  // namespace cfg

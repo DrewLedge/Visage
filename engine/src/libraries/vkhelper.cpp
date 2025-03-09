@@ -451,10 +451,12 @@ void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const VkhImage
     vkCmdPipelineBarrier(commandBuffer.v(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);  // insert the barrier into the command buffer
 }
 
-void transitionImageLayout(VkhCommandPool& commandPool, VkQueue graphicsQueue, const VkhImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t layerCount, uint32_t levelCount, uint32_t baseMip) {
-    VkhCommandBuffer tempCommandBuffer = beginSingleTimeCommands(commandPool);
-    transitionImageLayout(tempCommandBuffer, image, format, oldLayout, newLayout, layerCount, levelCount, baseMip);
-    endSingleTimeCommands(tempCommandBuffer, commandPool, graphicsQueue);
+void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const Texture& tex, TextureType textureType, VkImageLayout oldLayout, VkImageLayout newLayout) {
+    transitionImageLayout(commandBuffer, tex.image, getTextureFormat(textureType), oldLayout, newLayout, tex.arrayLayers, tex.mipLevels, 0);
+}
+
+void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const Texture& tex, TextureType textureType, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t baseMip) {
+    transitionImageLayout(commandBuffer, tex.image, getTextureFormat(textureType), oldLayout, newLayout, tex.arrayLayers, mipLevels, baseMip);
 }
 
 void createImage(VkhImage& image, VkhDeviceMemory& imageMemory, uint32_t width, uint32_t height, VkFormat format, uint32_t mipLevels, uint32_t arrayLayers, bool cubeMap, VkImageUsageFlags usage, VkSampleCountFlagBits sample) {
@@ -503,6 +505,7 @@ void createImage(VkhImage& image, VkhDeviceMemory& imageMemory, uint32_t width, 
 
 void createSampler(VkhSampler& sampler, uint32_t mipLevels, TextureType type) {
     sampler.reset();
+
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -557,10 +560,7 @@ void createImageView(Texture& tex, TextureType type) {
 
     if (type == CUBEMAP) {
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        viewInfo.subresourceRange.layerCount = 6;
-    }
-
-    if (tex.arrayLayers > 1) {
+    } else if (tex.arrayLayers > 1) {
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     }
 
@@ -596,37 +596,26 @@ void createImageView(Texture& tex, VkFormat format) {
     }
 }
 
-void copyImage(VkhImage& srcImage, VkhImage& dstImage, VkImageLayout srcStart, VkImageLayout dstStart, VkImageLayout dstAfter, const VkhCommandBuffer& commandBuffer, VkFormat format, uint32_t width, uint32_t height, bool color) {
-    transitionImageLayout(commandBuffer, srcImage, format, srcStart, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, 1, 0);
-    transitionImageLayout(commandBuffer, dstImage, format, dstStart, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, 1, 0);
+void createTexture(Texture& tex, TextureType textureType, VkImageUsageFlags usage, uint32_t width, uint32_t height) {
+    bool cubemap = (textureType == CUBEMAP);
 
-    VkImageCopy copy{};
-    VkImageAspectFlagBits aspect = color ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
-    copy.srcSubresource.aspectMask = aspect;
-    copy.srcSubresource.mipLevel = 0;
-    copy.srcSubresource.baseArrayLayer = 0;
-    copy.srcSubresource.layerCount = 1;
-    copy.dstSubresource.aspectMask = aspect;
-    copy.dstSubresource.mipLevel = 0;
-    copy.dstSubresource.baseArrayLayer = 0;
-    copy.dstSubresource.layerCount = 1;
-    copy.extent = {width, height, 1};
-
-    vkCmdCopyImage(commandBuffer.v(), srcImage.v(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage.v(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-    transitionImageLayout(commandBuffer, dstImage, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstAfter, 1, 1, 0);
-    transitionImageLayout(commandBuffer, srcImage, format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 1, 0);
+    createImage(tex.image, tex.memory, width, height, textureType, tex.mipLevels, tex.arrayLayers, cubemap, usage, tex.sampleCount);
+    createImageView(tex, textureType);
+    createSampler(tex.sampler, tex.mipLevels, textureType);
 }
 
-void copyImage(VkhCommandPool& commandPool, VkQueue graphicsQueue, VkhImage& srcImage, VkhImage& dstImage, VkImageLayout srcStart, VkImageLayout dstStart, VkImageLayout dstAfter, VkFormat format, uint32_t width, uint32_t height, bool color) {
-    VkhCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
-    copyImage(srcImage, dstImage, srcStart, dstStart, dstAfter, commandBuffer, format, width, height, color);
-    endSingleTimeCommands(commandBuffer, commandPool, graphicsQueue);
+void createSwapTexture(Texture& tex, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height) {
+    createImage(tex.image, tex.memory, width, height, format, tex.mipLevels, tex.arrayLayers, false, usage, tex.sampleCount);
+    createImageView(tex, format);
+    createSampler(tex.sampler, tex.mipLevels, BASE);
 }
 
 VkFormat getTextureFormat(TextureType textureType) {
     switch (textureType) {
         case SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
+        case SFLOAT:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
         case UNORM:
             return VK_FORMAT_R8G8B8A8_UNORM;
         case DEPTH:

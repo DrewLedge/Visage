@@ -349,7 +349,7 @@ void VkPipelines::createLightingPipeline() {
 
     // color attachment: specifies the properties of the color image used in the render pass
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_swap->getFormat();                            // format of the color attachment
+    colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;                  // format of the color attachment
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;                         // number of samples to use for multisampling
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                    // what to do with the data in the attachment before rendering
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;                  // what to do with the data in the attachment after rendering
