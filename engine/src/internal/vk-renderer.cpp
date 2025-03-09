@@ -411,9 +411,6 @@ void VkRenderer::recordLightingCommandBuffers() {
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearValue;
 
-    const vkh::Texture& deferredDepth = m_textures->getDeferredDepthTex(m_currentFrame);
-    vkh::transitionImageLayout(lightingCommandBuffer, deferredDepth, vkh::DEPTH, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     vkCmdBeginRenderPass(lightingCommandBuffer.v(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     // skybox

@@ -358,6 +358,13 @@ struct SCsupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct LayoutTransition {
+    VkAccessFlags srcAccessMask;
+    VkAccessFlags dstAccessMask;
+    VkPipelineStageFlags srcStage;
+    VkPipelineStageFlags dstStage;
+};
+
 // -------------------- SWAP CHAIN -------------------- //
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
@@ -405,6 +412,8 @@ void createDeviceLocalBuffer(BufferObj& buffer, VkDeviceSize size, VkBufferUsage
 
 // -------------------- IMAGES -------------------- //
 VkFormat findDepthFormat();
+
+LayoutTransition getLayoutTransition(VkImageLayout oldLayout, VkImageLayout newLayout);
 
 void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const VkhImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t layerCount, uint32_t levelCount, uint32_t baseMip);
 void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const Texture& tex, TextureType textureType, VkImageLayout oldLayout, VkImageLayout newLayout);
