@@ -12,10 +12,8 @@ file(MAKE_DIRECTORY ${SHADER_OUT_DIR})
 set(SHADERS
     ${SHADER_DIR}/pathtracing/gen.rgen
     ${SHADER_DIR}/pathtracing/closehit.rchit
-    ${SHADER_DIR}/pathtracing/anyhit.rahit
     ${SHADER_DIR}/pathtracing/miss.rmiss
     ${SHADER_DIR}/pathtracing/shadowhit.rchit
-    ${SHADER_DIR}/pathtracing/shadowanyhit.rahit
     ${SHADER_DIR}/pathtracing/shadowmiss.rmiss
     ${SHADER_DIR}/pathtracing/present.vert
     ${SHADER_DIR}/pathtracing/present.frag

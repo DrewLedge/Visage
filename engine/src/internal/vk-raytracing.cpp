@@ -63,7 +63,7 @@ void VkRaytracing::updateTLAS(uint32_t currentFrame, bool changed) {
 }
 
 void VkRaytracing::createSBT(const VkhPipeline& rtPipeline, const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rtProperties) {
-    constexpr size_t shaderGroupCount = 7;
+    constexpr size_t shaderGroupCount = 5;
 
     // the size of a single shader group handle
     // shader group handles tell the gpu where to find specific shaders
@@ -121,7 +121,7 @@ void VkRaytracing::createSBT(const VkhPipeline& rtPipeline, const VkPhysicalDevi
     // ray hit region
     m_sbt.hitR.deviceAddress = sbtAddr + (3 * m_sbt.entryS);
     m_sbt.hitR.stride = m_sbt.entryS;
-    m_sbt.hitR.size = m_sbt.entryS * 4;
+    m_sbt.hitR.size = m_sbt.entryS * 2;
 
     // callable region (not used)
     m_sbt.callR.deviceAddress = 0;
@@ -365,24 +365,6 @@ void VkRaytracing::createMeshInstace(size_t index) {
 
     meshInstance.instanceCustomIndex = static_cast<uint32_t>(objectIndex);
     meshInstance.mask = 0xFF;
-
-    // get the instance sbt record offset and mesh instance flags
-    // if opaque, the offset is 0, if it may be translucent the offset is 2
-    // if the albedo texture doesnt exist, set the offset to 0
-    constexpr uint32_t opaqueOffset = 0;
-    constexpr uint32_t translucentOffset = 2;
-
-    int albedoIndex = m_scene->getObjectMaterial(objectIndex).baseColor;
-
-    // default for fully opaque objects
-    meshInstance.instanceShaderBindingTableRecordOffset = opaqueOffset;
-    meshInstance.flags = VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
-
-    // if the albedo texture exists and it contains translucent elements
-    if (albedoIndex >= 0 && !m_textures->getMeshTex(albedoIndex).fullyOpaque) {
-        meshInstance.instanceShaderBindingTableRecordOffset = translucentOffset;
-        meshInstance.flags = 0;
-    }
 
     m_meshInstances.push_back(meshInstance);
 }

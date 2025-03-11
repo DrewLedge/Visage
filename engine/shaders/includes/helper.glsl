@@ -115,7 +115,9 @@ vec3 cookTorrance(vec3 N, vec3 L, vec3 V, vec4 albedo, float metallic, float rou
     // fresnel term
     vec3 F = fresnelTerm(albedo.rgb, metallic, VdotH);
 
-    float norm = (4.0f * max(NdotV * NdotL, 0.0001f));  // used to normalize the specular term
+    float norm = 4.0f * NdotV * NdotL;
+    norm = max(norm, 0.001f);  // prevent divide by 0
+
     vec3 spec = (ND * G * F) / norm;
 
     // the proportion of light not reflected specularly
