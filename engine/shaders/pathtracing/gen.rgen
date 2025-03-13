@@ -5,6 +5,8 @@
 
 layout(push_constant, std430) uniform pc {
     int frame;
+    int lightCount;
+    uint frameCount;
 };
 
 layout(set = 3, binding = 0) uniform CamBufferObject {
@@ -61,5 +63,5 @@ void main() {
         0        // payload
     );
 
-    imageStore(rtTextures[frame], ivec2(gl_LaunchIDEXT.xy), vec4(payload.col, 1.0f));
+    imageStore(rtTextures[frame * 2], ivec2(gl_LaunchIDEXT.xy), vec4(payload.col, 1.0f));
 }

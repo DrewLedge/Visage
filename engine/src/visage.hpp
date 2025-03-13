@@ -109,6 +109,7 @@ private:
     std::vector<scene::ModelData> m_modelData;
     std::string m_skybox{};
     bool m_rtEnabled = false;
+    bool m_sceneChanged = false;
     bool m_showDebugInfo = false;
 
     // glfw

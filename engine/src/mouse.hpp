@@ -4,6 +4,7 @@
 
 struct MouseObject {
     bool locked = true;
+    bool mouseChanged = false;
 
     float lastX = 0.0f;
     float lastY = 0.0f;
@@ -33,6 +34,11 @@ public:
     }
 
     [[nodiscard]] MouseObject* getMouse() noexcept { return &mouse; }
+    [[nodiscard]] bool mouseChanged() {
+        bool changed = mouse.mouseChanged;
+        mouse.mouseChanged = false;
+        return changed;
+    }
 };
 
 static void mouseCallback(GLFWwindow* window, double xPos, double yPos) noexcept {
@@ -42,6 +48,8 @@ static void mouseCallback(GLFWwindow* window, double xPos, double yPos) noexcept
     MouseObject* mouse = MouseSingleton::v().getMouse();
 
     if (mouse->locked) {
+        mouse->mouseChanged = true;
+
         float xoff = mouse->lastX - xp;
         float yoff = mouse->lastY - yp;
         mouse->lastX = xp;

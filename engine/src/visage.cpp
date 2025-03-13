@@ -106,15 +106,22 @@ void Visage::initialize() {
 }
 
 void Visage::render() {
-    MouseObject* mouse = MouseSingleton::v().getMouse();
-    m_mouseUp = mouse->upAngle;
-    m_mouseRight = mouse->rightAngle;
+    bool mouseChanged = MouseSingleton::v().mouseChanged();
+    m_sceneChanged |= mouseChanged;
 
-    m_scene.updateCamQuaternion(m_mouseUp, m_mouseRight);
+    if (mouseChanged) {
+        MouseObject* mouse = MouseSingleton::v().getMouse();
+        m_mouseUp = mouse->upAngle;
+        m_mouseRight = mouse->rightAngle;
+
+        m_scene.updateCamQuaternion(m_mouseUp, m_mouseRight);
+    }
 
     calcFps();
     glfwPollEvents();
     drawFrame();
+
+    m_sceneChanged = false;
 }
 
 void Visage::lockMouse(bool locked) {
@@ -137,6 +144,7 @@ void Visage::lockMouse(bool locked) {
 }
 
 void Visage::translateCamForward(float speed) {
+    m_sceneChanged = true;
     dml::vec3 forward = m_scene.getCamForward();
 
     dml::vec3& pos = m_scene.getCamPos();
@@ -144,6 +152,7 @@ void Visage::translateCamForward(float speed) {
 }
 
 void Visage::translateCamRight(float speed) {
+    m_sceneChanged = true;
     dml::vec3 forward = m_scene.getCamForward();
     dml::vec3 right = m_scene.getCamRight(forward);
 
@@ -152,11 +161,13 @@ void Visage::translateCamRight(float speed) {
 }
 
 void Visage::translateCamVertically(float speed) {
+    m_sceneChanged = true;
     dml::vec3& pos = m_scene.getCamPos();
     pos.y += speed;
 }
 
 void Visage::copyModel(const std::string& fileName) {
+    m_sceneChanged = true;
     const dml::mat4& view = m_scene.getCamMatrices()->view;
     dml::vec3 pos = dml::getCamWorldPos(view);
 
@@ -175,6 +186,7 @@ void Visage::copyModel(const std::string& fileName) {
 }
 
 void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float range) {
+    m_sceneChanged = true;
     size_t currentLightCount = m_scene.getLightCount();
     size_t batchCount = m_scene.getShadowBatchCount();
     size_t newLightCount = currentLightCount + 1;
@@ -216,6 +228,7 @@ void Visage::createPlayerLight(float range) {
 }
 
 void Visage::resetScene() {
+    m_sceneChanged = true;
     vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
 
     // remove lights
@@ -399,7 +412,7 @@ void Visage::drawFrame() {
     }
 
     // record command buffers and draw the frame
-    VkResult drawFrameResult = m_renderer.drawFrame(m_currentFrame, static_cast<float>(m_fps));
+    VkResult drawFrameResult = m_renderer.drawFrame(m_currentFrame, static_cast<float>(m_fps), m_sceneChanged);
 
     // check if the swap chain is out of date (window was resized, etc):
     if (drawFrameResult == VK_ERROR_OUT_OF_DATE_KHR || drawFrameResult == VK_SUBOPTIMAL_KHR) {

@@ -1054,26 +1054,20 @@ void VkPipelines::createRayTracingPipeline() {
     shaderGroups[4].generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups[4].closestHitShader = 4;
 
-    VkPushConstantRange genPCRange{};
-    genPCRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-    genPCRange.offset = 0;
-    genPCRange.size = sizeof(pushconstants::FramePushConst);
-
-    VkPushConstantRange chPCRange{};
-    chPCRange.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-    chPCRange.offset = sizeof(pushconstants::FramePushConst);
-    chPCRange.size = sizeof(pushconstants::LightPushConst);
+    VkPushConstantRange pcRange{};
+    pcRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    pcRange.offset = 0;
+    pcRange.size = sizeof(pushconstants::RTPushConst);
 
     // create the pipeline layoyut
     const std::vector<VkDescriptorSetLayout> layouts = m_descs->getLayouts(descriptorsets::PASSES::RT);
-    const std::array<VkPushConstantRange, 2> ranges = {genPCRange, chPCRange};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-    pipelineLayoutInfo.pPushConstantRanges = ranges.data();
-    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(ranges.size());
+    pipelineLayoutInfo.pPushConstantRanges = &pcRange;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
     VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, m_rtPipeline.layout.p());
     if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to create raytracing pipeline layout!!");

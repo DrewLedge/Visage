@@ -10,8 +10,9 @@
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
 layout(push_constant, std430) uniform pc {
-    layout(offset = 4) int frame;
+    int frame;
     int lightCount;
+    uint frameCount;
 };
 
 #include "../includes/light.glsl"

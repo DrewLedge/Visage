@@ -11,6 +11,7 @@ layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    ivec2 p = ivec2(vec2(imageSize(rtTextures[frame])) * inUV);
-    outColor = imageLoad(rtTextures[frame], p);
+    int index = frame * 2;
+    ivec2 p = ivec2(vec2(imageSize(rtTextures[index])) * inUV);
+    outColor = imageLoad(rtTextures[index], p);
 }

@@ -1,9 +1,5 @@
 #include "vk-raytracing.hpp"
 
-#include <vulkan/vulkan_core.h>
-
-#include <stdexcept>
-
 namespace raytracing {
 void VkRaytracing::init(uint32_t maxFrames, const VkhCommandPool& commandPool, VkQueue gQueue, VkDevice device, const scene::VkScene* scene, const textures::VkTextures* textures) noexcept {
     m_scene = scene;

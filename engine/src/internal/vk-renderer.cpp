@@ -105,9 +105,10 @@ void VkRenderer::VkRenderer::createFrameBuffers(bool shadow) {
     }
 }
 
-VkResult VkRenderer::drawFrame(uint32_t currentFrame, float fps) {
+VkResult VkRenderer::drawFrame(uint32_t currentFrame, float fps, bool sceneChanged) {
     m_currentFrame = currentFrame;
     m_fps = fps;
+    m_sceneChanged = sceneChanged;
 
     recordAllCommandBuffers();
 
@@ -545,8 +546,7 @@ void VkRenderer::recordRTCommandBuffers() {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipe.pipeline.v());
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rtPipe.layout.v(), 0, static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 
-    vkCmdPushConstants(commandBuffer, rtPipe.layout.v(), VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, sizeof(pushconstants::FramePushConst), &m_framePushConst);
-    vkCmdPushConstants(commandBuffer, rtPipe.layout.v(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, sizeof(pushconstants::FramePushConst), sizeof(pushconstants::RTPushConst), &m_rtPushConst);
+    vkCmdPushConstants(commandBuffer, rtPipe.layout.v(), VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(pushconstants::RTPushConst), &m_rtPushConst);
 
     vkhfp::vkCmdTraceRaysKHR(commandBuffer, m_raytracing->getRaygenRegion(), m_raytracing->getMissRegion(), m_raytracing->getHitRegion(), m_raytracing->getCallableRegion(), m_swap->getWidth(), m_swap->getHeight(), 1);
 
@@ -565,6 +565,12 @@ void VkRenderer::updatePushConstants() noexcept {
     if (m_rtEnabled) {
         m_rtPushConst.frame = m_framePushConst.frame;
         m_rtPushConst.lightCount = m_lightPushConst.lightCount;
+
+        if (m_sceneChanged) {
+            m_rtPushConst.frameCount = 0;
+        } else {
+            m_rtPushConst.frameCount++;
+        }
     }
 }
 

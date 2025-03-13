@@ -353,9 +353,12 @@ void VkTextures::createCompTextures() {
 }
 
 void VkTextures::createRTTextures() {
-    m_rt.resize(m_maxFrames);
-    for (size_t i = 0; i < m_maxFrames; i++) {
-        vkh::createTexture(m_rt[i], vkh::SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_swap->getWidth(), m_swap->getHeight());
+    size_t count = m_maxFrames * 2;
+    m_rt.resize(count);
+
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    for (size_t i = 0; i < count; i++) {
+        vkh::createTexture(m_rt[i], vkh::SFLOAT, usage, m_swap->getWidth(), m_swap->getHeight());
     }
 }
 

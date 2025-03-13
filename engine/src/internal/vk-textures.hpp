@@ -62,17 +62,17 @@ private:
 private:
     static constexpr VkSampleCountFlagBits m_compSampleCount = VK_SAMPLE_COUNT_8_BIT;
 
-    // textures
-    std::vector<vkh::Texture> m_comp{};
     std::vector<vkh::Texture> m_rt{};
+    vkh::Texture m_blueNoise{};
+
+    std::vector<vkh::Texture> m_comp{};
     std::vector<vkh::Texture> m_lighting{};
     std::vector<vkh::Texture> m_wboit{};
     std::vector<vkh::Texture> m_shadow{};
     std::vector<vkh::Texture> m_deferredColor{};
     std::vector<vkh::Texture> m_deferredDepth{};
-    vkh::Texture m_skyboxCubemap{};
-    vkh::Texture m_blueNoise{};
 
+    vkh::Texture m_skyboxCubemap{};
     std::string m_skyboxPath{};
 
     std::array<VkFormat, 4> m_deferredColorFormats{};
