@@ -17,7 +17,7 @@ public:
     VkTextures(VkTextures&&) = delete;
     VkTextures& operator=(VkTextures&&) = delete;
 
-    void init(VkhCommandPool commandPool, VkQueue gQueue, const swapchain::VkSwapChain* swap, scene::VkScene* scene);
+    void init(uint32_t maxFrames, VkhCommandPool commandPool, VkQueue gQueue, const swapchain::VkSwapChain* swap, scene::VkScene* scene);
     void createRenderTextures(bool rtEnabled, bool createShadow);
     void loadMeshTextures();
 

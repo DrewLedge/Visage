@@ -6,14 +6,14 @@
 #include "stb_image.h"
 
 namespace textures {
-void VkTextures::init(VkhCommandPool commandPool, VkQueue gQueue, const swapchain::VkSwapChain* swap, scene::VkScene* scene) {
+void VkTextures::init(uint32_t maxFrames, VkhCommandPool commandPool, VkQueue gQueue, const swapchain::VkSwapChain* swap, scene::VkScene* scene) {
     m_commandPool = commandPool;
     m_gQueue = gQueue;
 
     m_swap = swap;
     m_scene = scene;
 
-    m_maxFrames = m_swap->getMaxFrames();
+    m_maxFrames = maxFrames;
     m_depthShadowFormat = vkh::findDepthFormat();
 }
 

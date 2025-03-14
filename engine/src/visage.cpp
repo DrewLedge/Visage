@@ -39,11 +39,14 @@ void Visage::initialize() {
     m_vulkanCore = m_setup.init(m_window);
     m_rtEnabled &= m_setup.isRaytracingSupported();
 
+    // disable triple buffering if raytracing is enabled
+    m_maxFrames = m_rtEnabled ? 1 : 3;
+
     // create swapchain
     m_swap.createSwap(m_vulkanCore, m_setup.getGraphicsFamily());
 
     // init renderer
-    m_renderer.init(m_rtEnabled, m_showDebugInfo, m_vulkanCore.device, &m_setup, &m_swap, &m_textures, &m_scene, &m_buffers, &m_descs, &m_pipe, &m_raytracing);
+    m_renderer.init(m_rtEnabled, m_maxFrames, m_showDebugInfo, m_vulkanCore.device, &m_setup, &m_swap, &m_textures, &m_scene, &m_buffers, &m_descs, &m_pipe, &m_raytracing);
     VkhCommandPool commandPool = m_renderer.getCommandPool();
 
     // load scene data
@@ -51,7 +54,7 @@ void Visage::initialize() {
     m_scene.loadScene(m_modelData);
 
     // init textures
-    m_textures.init(commandPool, m_setup.gQueue(), &m_swap, &m_scene);
+    m_textures.init(m_maxFrames, commandPool, m_setup.gQueue(), &m_swap, &m_scene);
     m_textures.loadMeshTextures();
     m_textures.createRenderTextures(m_rtEnabled, true);
 
@@ -63,7 +66,7 @@ void Visage::initialize() {
 
     // setup acceleration structures if raytracing is enabled
     if (m_rtEnabled) {
-        m_raytracing.init(m_swap.getMaxFrames(), commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene, &m_textures);
+        m_raytracing.init(m_maxFrames, commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene, &m_textures);
         m_raytracing.createAccelStructures();
     }
 
@@ -71,11 +74,11 @@ void Visage::initialize() {
     m_scene.initSceneData(0.0f, 0.0f, m_swap.getWidth(), m_swap.getHeight());
 
     // create buffers from scene data
-    m_buffers.init(commandPool, m_setup.gQueue(), m_rtEnabled, m_swap.getMaxFrames(), &m_scene);
+    m_buffers.init(commandPool, m_setup.gQueue(), m_rtEnabled, m_maxFrames, &m_scene);
     m_buffers.createBuffers(m_currentFrame);
 
     // init the descriptorsets
-    m_descs.init(m_rtEnabled, m_swap.getMaxFrames(), m_vulkanCore.device, &m_scene, &m_textures, &m_buffers, m_raytracing.tlasData(m_rtEnabled));
+    m_descs.init(m_rtEnabled, m_maxFrames, m_vulkanCore.device, &m_scene, &m_textures, &m_buffers, m_raytracing.tlasData(m_rtEnabled));
 
     // init the pipelines
     m_pipe.init(m_rtEnabled, m_vulkanCore.device, &m_swap, &m_textures, &m_descs);
@@ -199,7 +202,7 @@ void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float ra
 
         m_textures.createNewShadowBatch();
 
-        for (size_t i = 0; i < m_swap.getMaxFrames(); i++) {
+        for (size_t i = 0; i < m_maxFrames; i++) {
             vkh::Texture s = m_textures.getShadowTex(batchCount, i);
 
             m_renderer.addShadowFrameBuffer(s);
@@ -386,7 +389,7 @@ void Visage::recreateSwap() {
 
 void Visage::drawFrame() {
     // get next frame
-    m_currentFrame = (m_currentFrame + 1) % m_swap.getMaxFrames();
+    m_currentFrame = (m_maxFrames == 1) ? 0 : (m_currentFrame + 1) % m_maxFrames;
 
     // wait for and reset fences
     vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);

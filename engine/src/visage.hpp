@@ -99,6 +99,7 @@ private:
 
     // frame data
     uint32_t m_currentFrame = 0;
+    uint32_t m_maxFrames = 0;
     uint32_t m_fps = 0;
 
     // descriptor sets and pools

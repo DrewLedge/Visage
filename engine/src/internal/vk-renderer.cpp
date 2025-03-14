@@ -7,7 +7,7 @@
 #include "config.hpp"
 
 namespace renderer {
-void VkRenderer::init(bool rtEnabled, bool showDebugInfo, VkDevice device, const setup::VkSetup* setup, const swapchain::VkSwapChain* swap, const textures::VkTextures* textures, const scene::VkScene* scene, const buffers::VkBuffers* buffers, const descriptorsets::VkDescriptorSets* descs, const pipelines::VkPipelines* pipelines, const raytracing::VkRaytracing* raytracing) noexcept {
+void VkRenderer::init(bool rtEnabled, uint32_t maxFrames, bool showDebugInfo, VkDevice device, const setup::VkSetup* setup, const swapchain::VkSwapChain* swap, const textures::VkTextures* textures, const scene::VkScene* scene, const buffers::VkBuffers* buffers, const descriptorsets::VkDescriptorSets* descs, const pipelines::VkPipelines* pipelines, const raytracing::VkRaytracing* raytracing) noexcept {
     m_setup = setup;
     m_swap = swap;
     m_textures = textures;
@@ -18,6 +18,7 @@ void VkRenderer::init(bool rtEnabled, bool showDebugInfo, VkDevice device, const
     m_raytracing = raytracing;
 
     m_rtEnabled = rtEnabled;
+    m_maxFrames = maxFrames;
     m_showDebugInfo = showDebugInfo;
     m_device = device;
 
@@ -28,15 +29,14 @@ void VkRenderer::init(bool rtEnabled, bool showDebugInfo, VkDevice device, const
 
 void VkRenderer::VkRenderer::createCommandBuffers() {
     m_commandPool = vkh::createCommandPool(m_setup->getGraphicsFamily(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    uint32_t maxFrames = m_swap->getMaxFrames();
 
     if (!m_rtEnabled) {
-        allocateCommandBuffers(m_deferredCB, maxFrames, 1);
-        allocateCommandBuffers(m_shadowCB, m_scene->getShadowBatchCount() * maxFrames, 0);
-        allocateCommandBuffers(m_lightingCB, maxFrames, 0);
-        allocateCommandBuffers(m_wboitCB, maxFrames, 0);
+        allocateCommandBuffers(m_deferredCB, m_maxFrames, 1);
+        allocateCommandBuffers(m_shadowCB, m_scene->getShadowBatchCount() * m_maxFrames, 0);
+        allocateCommandBuffers(m_lightingCB, m_maxFrames, 0);
+        allocateCommandBuffers(m_wboitCB, m_maxFrames, 0);
     } else {
-        allocateCommandBuffers(m_rtCB, maxFrames, 0);
+        allocateCommandBuffers(m_rtCB, m_maxFrames, 0);
     }
 
     allocateCommandBuffers(m_compCB, m_swap->getImageCount(), 0);
@@ -46,18 +46,17 @@ void VkRenderer::VkRenderer::createCommandBuffers() {
 
 void VkRenderer::VkRenderer::createFrameBuffers(bool shadow) {
     if (!m_rtEnabled) {
-        uint32_t maxFrames = m_swap->getMaxFrames();
         size_t shadowBatchCount = m_scene->getShadowBatchCount();
 
-        m_deferredFB.resize(maxFrames);
-        m_shadowFB.reserve(maxFrames * shadowBatchCount);
-        m_lightingFB.resize(maxFrames);
-        m_wboitFB.resize(maxFrames);
+        m_deferredFB.resize(m_maxFrames);
+        m_shadowFB.reserve(m_maxFrames * shadowBatchCount);
+        m_lightingFB.resize(m_maxFrames);
+        m_wboitFB.resize(m_maxFrames);
 
         // create shadowmap framebuffers
         if (shadow) {
             for (size_t j = 0; j < shadowBatchCount; j++) {
-                for (size_t i = 0; i < maxFrames; i++) {
+                for (size_t i = 0; i < m_maxFrames; i++) {
                     VkhFramebuffer fb{};
                     vkh::createFB(m_pipe->getShadowPipe().renderPass, fb, m_textures->getShadowTex(j, i).imageView.p(), 1, cfg::SHADOW_WIDTH, cfg::SHADOW_HEIGHT);
                     m_shadowFB.push_back(fb);
@@ -65,7 +64,7 @@ void VkRenderer::VkRenderer::createFrameBuffers(bool shadow) {
             }
         }
 
-        for (size_t i = 0; i < maxFrames; i++) {
+        for (size_t i = 0; i < m_maxFrames; i++) {
             // deferred pass framebuffers
             std::array<VkImageView, 5> attachments{};
             for (size_t j = 0; j < 4; j++) {
@@ -152,7 +151,7 @@ VkResult VkRenderer::drawFrame(uint32_t currentFrame, float fps, bool sceneChang
 void VkRenderer::freeLights() {
     allocateCommandBuffers(m_shadowCB, 0, 0);
     m_shadowFB.clear();
-    m_shadowFB.reserve(m_swap->getMaxFrames());
+    m_shadowFB.reserve(m_maxFrames);
     m_frameShadowCommandBuffers.clear();
 }
 
@@ -172,7 +171,7 @@ void VkRenderer::addShadowCommandBuffers() {
 }
 
 void VkRenderer::setupFences() {
-    m_fences.resize(m_swap->getMaxFrames());
+    m_fences.resize(m_maxFrames);
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -184,7 +183,7 @@ void VkRenderer::setupFences() {
 }
 
 void VkRenderer::createSemaphores() {
-    for (size_t i = 0; i < m_swap->getMaxFrames(); i++) {
+    for (size_t i = 0; i < m_maxFrames; i++) {
         m_imageAvailableSemaphores.push_back(vkh::createSemaphore());
         m_renderFinishedSemaphores.push_back(vkh::createSemaphore());
 
@@ -335,7 +334,7 @@ void VkRenderer::recordShadowCommandBuffers() {
     size_t batchCount = m_scene->getShadowBatchCount();
 
     for (size_t i = 0; i < batchCount; i++) {
-        size_t index = (i * m_swap->getMaxFrames()) + m_currentFrame;
+        size_t index = (i * m_maxFrames) + m_currentFrame;
         VkCommandBuffer& shadowCommandBuffer = m_shadowCB.primary.buffers[index].v();
 
         // begin command buffer
@@ -559,7 +558,7 @@ void VkRenderer::recordRTCommandBuffers() {
 void VkRenderer::updatePushConstants() noexcept {
     m_framePushConst.frame = static_cast<int>(m_currentFrame);
 
-    m_lightPushConst.frameCount = static_cast<int>(m_swap->getMaxFrames());
+    m_lightPushConst.frameCount = static_cast<int>(m_maxFrames);
     m_lightPushConst.lightCount = static_cast<int>(m_scene->getLightCount());
     m_lightPushConst.lightsPerBatch = cfg::LIGHTS_PER_BATCH;
 
