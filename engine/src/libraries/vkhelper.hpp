@@ -280,9 +280,10 @@ namespace vkh {
 typedef enum {
     BASE,
     SRGB,
-    SFLOAT,
     UNORM,
     DEPTH,
+    SFLOAT16,
+    SFLOAT32,
     CUBEMAP,
     ALPHA
 } TextureType;

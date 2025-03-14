@@ -626,12 +626,13 @@ VkFormat getTextureFormat(TextureType textureType) {
     switch (textureType) {
         case SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
-        case SFLOAT:
-            return VK_FORMAT_R16G16B16A16_SFLOAT;
         case UNORM:
             return VK_FORMAT_R8G8B8A8_UNORM;
         case DEPTH:
             return findDepthFormat();
+        case SFLOAT16:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
+        case SFLOAT32:
         case CUBEMAP:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
         case ALPHA:

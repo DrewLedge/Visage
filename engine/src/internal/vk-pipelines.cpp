@@ -958,7 +958,7 @@ void VkPipelines::createCompositionPipeline() {
 
     VkPushConstantRange pcRange{};
     pcRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    pcRange.size = sizeof(pushconstants::FramePushConst);
+    pcRange.size = m_rtEnabled ? sizeof(pushconstants::RTPushConst) : sizeof(pushconstants::FramePushConst);
     pcRange.offset = 0;
 
     const std::vector<VkDescriptorSetLayout> layouts = m_descs->getLayouts(descriptorsets::PASSES::COMP);

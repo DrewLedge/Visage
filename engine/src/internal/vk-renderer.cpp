@@ -508,7 +508,8 @@ void VkRenderer::recordCompCommandBuffers() {
     vkCmdBindPipeline(compCommandBuffer.v(), VK_PIPELINE_BIND_POINT_GRAPHICS, compPipe.pipeline.v());
     vkCmdBindDescriptorSets(compCommandBuffer.v(), VK_PIPELINE_BIND_POINT_GRAPHICS, compPipe.layout.v(), 0, 1, set, 0, nullptr);
 
-    vkCmdPushConstants(compCommandBuffer.v(), compPipe.layout.v(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushconstants::FramePushConst), &m_framePushConst);
+    size_t pcSize = m_rtEnabled ? sizeof(pushconstants::RTPushConst) : sizeof(pushconstants::FramePushConst);
+    vkCmdPushConstants(compCommandBuffer.v(), compPipe.layout.v(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, static_cast<uint32_t>(pcSize), &m_rtPushConst);
 
     vkCmdDraw(compCommandBuffer.v(), 6, 1, 0, 0);
 
@@ -567,7 +568,7 @@ void VkRenderer::updatePushConstants() noexcept {
         m_rtPushConst.lightCount = m_lightPushConst.lightCount;
 
         if (m_sceneChanged) {
-            m_rtPushConst.frameCount = 0;
+            m_rtPushConst.frameCount = 1;
         } else {
             m_rtPushConst.frameCount++;
         }

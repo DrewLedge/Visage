@@ -52,7 +52,7 @@ int main() {
     visage::Visage engine;
 
     // load models
-    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 30.0f);
+    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 0.4f);
 
     // load skybox
     engine.loadSkybox("night-sky.hdr");

@@ -21,7 +21,6 @@ public:
     void createRenderTextures(bool rtEnabled, bool createShadow);
     void loadMeshTextures();
 
-    void loadBlueNoise(const std::string& fileName) { createTextureFromFile(m_blueNoise, cfg::NOISE_DIR + fileName); }
     void loadSkybox(const std::string& fileName) { createCubemapTextureFromFile(m_skyboxCubemap, cfg::SKYBOX_DIR + fileName); }
 
     void createNewShadowBatch();
@@ -48,7 +47,6 @@ public:
     [[nodiscard]] size_t getDeferredColorCount() const noexcept { return m_maxFrames * 4; }
 
     // other
-    [[nodiscard]] vkh::Texture getBlueNoiseTex() const noexcept { return m_blueNoise; }
     [[nodiscard]] vkh::Texture getSkyboxCubemap() const noexcept { return m_skyboxCubemap; }
 
     [[nodiscard]] VkFormat getDepthFormat() const noexcept { return m_depthShadowFormat; }
@@ -63,7 +61,6 @@ private:
     static constexpr VkSampleCountFlagBits m_compSampleCount = VK_SAMPLE_COUNT_8_BIT;
 
     std::vector<vkh::Texture> m_rt{};
-    vkh::Texture m_blueNoise{};
 
     std::vector<vkh::Texture> m_comp{};
     std::vector<vkh::Texture> m_lighting{};

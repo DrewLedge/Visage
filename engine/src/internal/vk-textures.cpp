@@ -358,16 +358,16 @@ void VkTextures::createRTTextures() {
 
     VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     for (size_t i = 0; i < count; i++) {
-        vkh::createTexture(m_rt[i], vkh::SFLOAT, usage, m_swap->getWidth(), m_swap->getHeight());
+        vkh::createTexture(m_rt[i], vkh::SFLOAT32, usage, m_swap->getWidth(), m_swap->getHeight());
     }
 }
 
 void VkTextures::createLightingTextures(size_t i) {
-    vkh::createTexture(m_lighting[i], vkh::SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_swap->getWidth(), m_swap->getHeight());
+    vkh::createTexture(m_lighting[i], vkh::SFLOAT16, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_swap->getWidth(), m_swap->getHeight());
 }
 
 void VkTextures::createWBOITTextures(size_t i) {
-    vkh::createTexture(m_wboit[i], vkh::SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_swap->getWidth(), m_swap->getHeight());
+    vkh::createTexture(m_wboit[i], vkh::SFLOAT16, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_swap->getWidth(), m_swap->getHeight());
 }
 
 void VkTextures::createShadowTextures() {

@@ -4,9 +4,11 @@
 
 layout(push_constant, std430) uniform pc {
     int frame;
+    int lightCount;
+    uint frameCount;
 };
 
-layout(set = 0, binding = 0, rgba16f) uniform readonly image2D rtTextures[];
+layout(set = 0, binding = 0, rgba32f) uniform readonly image2D rtTextures[];
 layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
