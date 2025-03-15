@@ -41,8 +41,13 @@ vec3 getDir(vec2 uv) {
     return (CamUBO[frame].iview * vec4(viewDir, 0.0f)).xyz;
 }
 
+#include "../includes/random.glsl"
+
 void main() {
-    vec2 uv = (0.5f + vec2(gl_LaunchIDEXT.xy)) / vec2(gl_LaunchSizeEXT.xy);
+    uint seed = createSeed(gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x, frameCount);
+
+    vec2 jitter = jitter(seed);
+    vec2 uv = (jitter + vec2(gl_LaunchIDEXT.xy)) / vec2(gl_LaunchSizeEXT.xy);
 
     vec3 pos = CamUBO[frame].iview[3].xyz;
     vec3 dir = getDir(uv);
@@ -64,5 +69,12 @@ void main() {
         0        // payload
     );
 
-    imageStore(rtTextures[frame * 2], ivec2(gl_LaunchIDEXT.xy), vec4(payload.col, 1.0f));
+    int base = frame * 2;
+    ivec2 imgUV = ivec2(gl_LaunchIDEXT.xy);
+
+    vec3 accumulated = (frameCount > 1) ? imageLoad(rtTextures[base + 1], imgUV).rgb + payload.col : payload.col;
+    imageStore(rtTextures[base + 1], imgUV, vec4(accumulated, 1.0f));
+
+    vec3 color = accumulated / float(frameCount);
+    imageStore(rtTextures[base], imgUV, vec4(color, 1.0f));
 }
