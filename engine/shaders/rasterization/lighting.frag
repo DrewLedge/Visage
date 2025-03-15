@@ -2,8 +2,6 @@
 
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define RASTERIZATION
-
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
 #include "../includes/light.glsl"

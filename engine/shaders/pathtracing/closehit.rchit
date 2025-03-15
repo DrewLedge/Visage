@@ -4,9 +4,6 @@
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_buffer_reference : require
 
-#define MAX_RAY_RECURSION 4
-#define RAYTRACING
-
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
 layout(push_constant, std430) uniform pc {
@@ -66,49 +63,9 @@ void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
 }
 
 #include "../includes/helper.glsl"
-#include "../includes/lightingcalc.glsl"
 #include "../includes/loadtextures.glsl"
 
-vec3 fresnel(vec4 albedo, vec3 viewDir, vec3 dir, float metallic) {
-    vec3 H = normalize(viewDir + dir);
-    float VdotH = max(dot(viewDir, H), 0.0f);
-    return fresnelTerm(albedo.rgb, metallic, VdotH);
-}
-
-void traceRay(vec3 hitPos, vec3 dir) {
-    payload.rec++;
-
-    traceRayEXT(
-        TLAS[frame],
-        0,       // flags
-        0xFF,    // cull mask
-        0,       // sbt offset
-        0,       // sbt stride
-        0,       // miss index
-        hitPos,  // pos
-        0.01f,   // min-range
-        dir,     // dir
-        100.0f,  // max-range
-        0        // payload
-    );
-}
-
-vec3 calcReflection(vec3 hitPos, vec3 viewDir, vec4 albedo, vec3 normal, vec4 metallicRoughness) {
-    vec3 dir = reflect(gl_WorldRayDirectionEXT, normal);
-
-    traceRay(hitPos, dir);
-
-    float metallic = metallicRoughness.b;
-
-    vec3 F = fresnel(albedo, viewDir, dir, metallic);
-    return payload.col * F;
-}
-
 void main() {
-    if (payload.rec >= MAX_RAY_RECURSION) {
-        return;
-    }
-
     // load the vertex data
     uint index = 3 * gl_PrimitiveID;
     vec2 uv;
@@ -126,11 +83,6 @@ void main() {
     mat3 tbn = getTBN(tangent, mat3(gl_ObjectToWorldEXT), norm);
     getTextures(texIndices[gl_InstanceCustomIndexEXT], uv, tbn, albedo, metallicRoughness, normal, emissive, occlusion);
 
-    vec3 hitPos = gl_WorldRayOriginEXT + (gl_WorldRayDirectionEXT * gl_HitTEXT);
-    vec3 viewDir = -gl_WorldRayDirectionEXT;
-
-    vec3 reflection = calcReflection(hitPos, viewDir, albedo, normal, metallicRoughness);
-    vec3 direct = calcLighting(albedo, metallicRoughness, normal, emissive, occlusion, hitPos, viewDir, frame, lightCount, 0.01);
-
-    payload.col = direct + reflection;
+    payload.col = albedo.rgb;
+    payload.terminate = true;
 }

@@ -24,7 +24,6 @@ float getLightConeFactor(int lightIndex, int frame, vec3 fragLightDir, vec3 ligh
     return factor * factor;
 }
 
-#ifdef RASTERIZATION
 float getShadowFactor(int lightIndex, int frame, vec3 fragPos, int frameCount, int lightsPerBatch) {
     // get the frag pos in light space
     vec4 fragPosLightspace = lssbo[frame].lights[lightIndex].vp * vec4(fragPos, 1.0f);
@@ -79,58 +78,3 @@ vec4 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissiv
     vec3 o = albedo.rgb * occlusion * 0.005f;
     return vec4(accumulated + emissive + o, albedo.a);
 }
-
-#endif
-
-#ifdef RAYTRACING
-vec3 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissive, float occlusion, vec3 fragPos, vec3 viewDir, int frame, int lightCount, float minShadowRayDist) {
-    vec3 accumulated = vec3(0.0f);
-
-    float roughness = metallicRoughness.g;
-    float metallic = metallicRoughness.b;
-
-    for (int i = 0; i < lightCount; i++) {
-        if (lssbo[frame].lights[i].intensity < 0.01f) continue;
-
-        vec3 lightPos = lssbo[frame].lights[i].pos.xyz;
-        vec3 lightColor = lssbo[frame].lights[i].color.xyz;
-        vec3 fragLightDir = normalize(lightPos - fragPos);
-
-        float lightConeFactor = getLightConeFactor(i, frame, fragLightDir, lightPos);
-        if (lightConeFactor < 0.01f) continue;
-
-        float attenuation = getAttenuation(i, frame, lightPos, fragPos);
-        if (attenuation < 0.01f) continue;
-
-        float contribution = lssbo[frame].lights[i].intensity * attenuation * lightConeFactor;
-        if (contribution < 0.01f) continue;
-
-        // trace the shadow rays
-        float lightDistance = distance(lightPos, fragPos);
-        float maxShadowRayDist = lightDistance - minShadowRayDist;
-
-        traceRayEXT(
-            TLAS[frame],
-            0,                 // flags
-            0xFF,              // cull mask
-            1,                 // sbt offset
-            0,                 // sbt stride
-            1,                 // miss index
-            fragPos,           // pos
-            minShadowRayDist,  // min-range
-            fragLightDir,      // dir
-            maxShadowRayDist,  // max-range
-            1                  // payload
-        );
-
-        if (shadowPayload.factor < 0.04f) continue;
-
-        vec3 brdf = cookTorrance(normal, fragLightDir, viewDir, albedo, metallic, roughness);
-        accumulated += (brdf * lightColor * contribution);
-    }
-
-    // final color calculation
-    vec3 o = albedo.rgb * occlusion * 0.005f;
-    return accumulated + emissive + o;
-}
-#endif
