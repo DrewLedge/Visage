@@ -51,6 +51,9 @@ void main() {
     vec2 jitter = jitter(seed);
     vec2 uv = (jitter + vec2(gl_LaunchIDEXT.xy)) / vec2(gl_LaunchSizeEXT.xy);
 
+    // init payload
+    payload.seed = seed;
+
     payload.col = vec3(0.0f);
     payload.rec = 0;
 

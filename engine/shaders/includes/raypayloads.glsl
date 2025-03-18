@@ -1,4 +1,6 @@
 struct PrimaryPayload {
+    uint seed;
+
     vec3 col;
     uint rec;
 
@@ -8,5 +10,5 @@ struct PrimaryPayload {
 };
 
 struct ShadowPayload {
-    float factor;
+    bool shadow;
 };

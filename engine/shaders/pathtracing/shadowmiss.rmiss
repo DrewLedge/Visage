@@ -6,5 +6,5 @@
 layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
-    shadowPayload.factor = 1.0f;
+    shadowPayload.shadow = false;
 }
