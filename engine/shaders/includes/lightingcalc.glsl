@@ -29,6 +29,7 @@ vec3 spotlightEmittedRadience(LightData light, vec3 pos, vec3 lightPos, vec3 fra
     return lightColor * intensity * falloff * attenuation;
 }
 
+#ifdef SHADOWMAP
 float getShadowFactor(LightData light, int lightIndex, int frame, vec3 fragPos, int frameCount, int lightsPerBatch) {
     // get the frag pos in light space
     vec4 fragPosLightspace = light.vp * vec4(fragPos, 1.0f);
@@ -78,3 +79,5 @@ vec4 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissiv
     vec3 o = albedo.rgb * occlusion * 0.005f;
     return vec4(accumulated + emissive + o, albedo.a);
 }
+
+#endif
