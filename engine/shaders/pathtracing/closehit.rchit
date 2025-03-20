@@ -63,7 +63,47 @@ void getVertData(uint index, out vec2 uv, out vec3 normal, out vec3 tangent) {
 }
 
 #include "../includes/helper.glsl"
+#include "../includes/lightingcalc.glsl"
 #include "../includes/loadtextures.glsl"
+
+bool isShadowed(vec3 hitPos, vec3 lightPos, vec3 fragLightDir) {
+    const float minDist = 0.01f;
+    float maxDist = distance(lightPos, hitPos) - minDist;
+
+    traceRayEXT(
+        TLAS[frame],
+        gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+        0xFF,
+        1,
+        0,
+        1,
+        hitPos,
+        minDist,
+        fragLightDir,
+        maxDist,
+        1);
+
+    return shadowPayload.shadow;
+}
+
+vec3 directLighting(vec3 hitPos) {
+    vec3 final = vec3(0.0f);
+
+    for (uint i = 0; i < lightCount; i++) {
+        LightData light = lssbo[frame].lights[i];
+        vec3 lightPos = light.pos.xyz;
+        vec3 fragLightDir = normalize(lightPos - hitPos);
+
+        vec3 Le = spotlightEmittedRadience(light, hitPos, lightPos, fragLightDir);
+        if (length(Le) < 0.05f) continue;
+
+        if (isShadowed(hitPos, lightPos, fragLightDir)) continue;
+
+        final += Le;
+    }
+
+    return final;
+}
 
 void main() {
     // load the vertex data
@@ -83,6 +123,9 @@ void main() {
     mat3 tbn = getTBN(tangent, mat3(gl_ObjectToWorldEXT), norm);
     getTextures(texIndices[gl_InstanceCustomIndexEXT], uv, tbn, albedo, metallicRoughness, normal, emissive, occlusion);
 
-    payload.col = albedo.rgb;
+    vec3 rayPos = gl_WorldRayOriginEXT + (gl_WorldRayDirectionEXT * gl_HitTEXT);
+    vec3 rayDir = gl_WorldRayDirectionEXT;
+
+    payload.col = directLighting(rayPos);
     payload.terminate = true;
 }
