@@ -52,10 +52,10 @@ int main() {
     visage::Visage engine;
 
     // load models
-    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 0.4f);
+    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 100.0f);
 
     // load skybox
-    engine.loadSkybox("night-sky.hdr");
+    engine.loadSkybox("kloppenheim_02_puresky.hdr");
 
     // create player following light
     engine.createPlayerLight(5.0f);
