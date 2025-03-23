@@ -1,24 +1,23 @@
-// Tiny Encryption Algorithm: https://www.highperformancegraphics.org/previous/www_2010/media/GPUAlgorithms/HPG2010_GPUAlgorithms_Zafar.pdf
-uint tea(uint v0, uint v1) {
-    uint sum = 0;
-    for (uint i = 0; i < 16; i++) {
-        sum += 0x9E3779B9;
-        v0 += ((v1 << 4) + 0xA341316C) ^ (v1 + sum) ^ ((v1 >> 5) + 0xC8013EA4);
-        v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
-    }
+// Jenkins one at a time hash by Bob Jenkins
+uint jenkins(uint v) {
+    uint hash = v;
+    hash += hash << 10;
+    hash ^= hash >> 6;
+    hash += hash << 3;
+    hash ^= hash >> 11;
+    hash += hash << 15;
 
-    return v0;
+    return hash;
 }
 
 uint createSeed(uint val1, uint val2) {
-    return tea(val1, val2);
+    uint val = val1 * 0x9e3779b9 + val2;
+    return jenkins(val);
 }
 
 // Numerical Recipes linear congruential generator
 uint lcg(inout uint seed) {
-    uint mA = 1664525;
-    uint iC = 1013904223;
-    seed = (mA * seed + iC);
+    seed = seed * 1664525 + 1013904223;
     return seed;
 }
 
