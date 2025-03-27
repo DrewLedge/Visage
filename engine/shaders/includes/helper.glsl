@@ -14,6 +14,19 @@ vec3 getViewDir(mat4 iview, mat4 model, vec3 pos) {
     return normalize(worldCamPos - fragPos);
 }
 
+vec3 getNonParalellTangent(vec3 normal) {
+    // find a new tangent to use that wont be parallel to the normal
+    vec3 nonParallel = vec3(1.0f, 0.0f, 0.0f);
+
+    // check if the new tangent is also parallel
+    if (abs(dot(nonParallel, normal)) > 0.95f) {
+        nonParallel = vec3(0.0f, 1.0f, 0.0f);
+    }
+
+    vec3 T = normalize(cross(normal, nonParallel));
+    return T;
+}
+
 mat3 getTBN(vec3 tangent, mat3 model, vec3 normal) {
     mat3 normMat = transpose(inverse(model));
     vec3 N = normalize(normMat * normal);
@@ -23,25 +36,8 @@ mat3 getTBN(vec3 tangent, mat3 model, vec3 normal) {
     vec3 orthogonal = T - dot(T, N) * N;  // re orthogonalize tangent
 
     // if the tangent is parallel to the normal
-    if (length(orthogonal) < 0.00001) {
-        // find a new tangent to use that wont be parallel to the normal
-        vec3 nonparallelTangent;
-
-        // the closer c is to 1, the more parallel the tangent and normal are
-        float c = abs(dot(vec3(1.0, 0.0, 0.0), N));
-
-        // the vector (1.0f, 0.0f, 0.0f) is also parallel to the normal
-        if (c > 0.95) {
-            nonparallelTangent = vec3(0.0f, 1.0f, 0.0f);
-        }
-
-        // the vector (1.0f, 0.0f, 0.0f) isnt parallel to the normal so its good to use
-        else {
-            nonparallelTangent = vec3(1.0f, 0.0f, 0.0f);
-        }
-
-        // use the new non parallel tangent
-        T = normalize(cross(N, nonparallelTangent));
+    if (length(orthogonal) < 0.001f) {
+        T = getNonParalellTangent(normal);
     } else {
         T = normalize(orthogonal);
     }
@@ -65,16 +61,16 @@ float getFarPlane(mat4 proj) {
 // calc the geometry function for a given term using Schlick-GGX approximation
 // the geometry function accounts for the fact that some microfacets may be shadowed by others, which reduces the reflectance
 // without the geometry function, rough surfaces would appear overly shiny
-float gSchlickGGX(float term, float k) {
+float gSchlickGGX(float term, float roughness) {
+    float r = (roughness + 1.0f);
+    float k = (r * r) / 8.0f;
     return term / (term * (1.0f - k) + k);
 }
 
 // calc the geometry function based on the light and view dir
 // this determines which microfacets are shadowed, and thus cannot reflect light into the view dir
 float gSmith(float NdotV, float NdotL, float roughness) {
-    float r = (roughness + 1.0f);
-    float k = (r * r) / 8.0f;
-    return gSchlickGGX(NdotV, k) * gSchlickGGX(NdotL, k);
+    return gSchlickGGX(NdotV, roughness) * gSchlickGGX(NdotL, roughness);
 }
 
 // calc the normal distribution function (ndf) using Trowbridge-Reitz model
@@ -94,7 +90,7 @@ vec3 fresnelTerm(vec3 color, float metallic, float VdotH) {
     return F0 + (1.0f - F0) * pow(1.0f - VdotH, 5.0f);
 }
 
-vec3 cookTorrance(vec3 N, vec3 L, vec3 V, vec4 albedo, float metallic, float roughness) {
+vec3 evalCookTorrance(vec3 N, vec3 L, vec3 V, vec3 albedo, float metallic, float roughness) {
     float a = roughness * roughness;
 
     // compute halfway vector
@@ -113,7 +109,7 @@ vec3 cookTorrance(vec3 N, vec3 L, vec3 V, vec4 albedo, float metallic, float rou
     float G = gSmith(NdotV, NdotL, roughness);
 
     // fresnel term
-    vec3 F = fresnelTerm(albedo.rgb, metallic, VdotH);
+    vec3 F = fresnelTerm(albedo, metallic, VdotH);
 
     float norm = 4.0f * NdotV * NdotL;
     norm = max(norm, 0.001f);  // prevent divide by 0
@@ -124,9 +120,36 @@ vec3 cookTorrance(vec3 N, vec3 L, vec3 V, vec4 albedo, float metallic, float rou
     vec3 kD = vec3(1.0f) - F;
     kD *= 1.0f - metallic;
 
-    vec3 diffuse = kD * albedo.rgb / PI;
+    vec3 diffuse = kD * albedo / PI;
 
     return (diffuse + spec) * NdotL;
+}
+
+// "Sampling the GGX Distribution of Visible Normals" by Eric Heitz
+// Check out: https://jcgt.org/published/0007/04/01/paper.pdf
+vec3 sampleGGXVNDF(vec3 Ve, float alphaX, float alphay, float U1, float U2) {
+    // Section 3.2: transforming the view direction to the hemisphere configuration
+    vec3 Vh = normalize(vec3(alphaX * Ve.x, alphay * Ve.y, Ve.z));
+
+    // Section 4.1: orthonormal basis (with special case if cross product is zero)
+    float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+    vec3 T1 = lensq > 0 ? vec3(-Vh.y, Vh.x, 0) * inversesqrt(lensq) : vec3(1, 0, 0);
+    vec3 T2 = cross(Vh, T1);
+
+    // Section 4.2: parameterization of the projected area
+    float r = sqrt(U1);
+    float phi = 2.0 * PI * U2;
+    float t1 = r * cos(phi);
+    float t2 = r * sin(phi);
+    float s = 0.5 * (1.0 + Vh.z);
+    t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
+
+    // Section 4.3: reprojection onto hemisphere
+    vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
+
+    // Section 3.4: transforming the normal back to the ellipsoid configuration
+    vec3 Ne = normalize(vec3(alphaX * Nh.x, alphay * Nh.y, max(0.0, Nh.z)));
+    return Ne;
 }
 
 float linDepth(float depth, float near, float far) {

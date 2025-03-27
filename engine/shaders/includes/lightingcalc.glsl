@@ -71,7 +71,7 @@ vec4 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissiv
         float shadowFactor = getShadowFactor(light, i, frame, fragPos, frameCount, lightsPerBatch);
         if (shadowFactor < 0.05f) continue;
 
-        vec3 brdf = cookTorrance(normal, fragLightDir, viewDir, albedo, metallic, roughness);
+        vec3 brdf = evalCookTorrance(normal, fragLightDir, viewDir, albedo.rgb, metallic, roughness);
         accumulated += (brdf * Le * shadowFactor);
     }
 

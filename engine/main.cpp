@@ -52,7 +52,7 @@ int main() {
     visage::Visage engine;
 
     // load models
-    engine.loadModel("glb_model.glb", {0.0f, 0.0f, 0.0f}, 150.0f);
+    engine.loadModel("glb_model.glb", {-1.0f, 0.0f, 0.0f}, 300.0f);
 
     // load skybox
     engine.loadSkybox("kloppenheim_02_puresky.hdr");

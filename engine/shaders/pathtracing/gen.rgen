@@ -52,14 +52,15 @@ void main() {
     vec2 uv = (jitter + vec2(gl_LaunchIDEXT.xy)) / vec2(gl_LaunchSizeEXT.xy);
 
     // init payload
+    payload.ray.pos = CamUBO[frame].iview[3].xyz;
+    payload.ray.dir = getDir(uv);
+    payload.ray.terminate = false;
+
     payload.seed = seed;
 
     payload.col = vec3(0.0f);
+    payload.throughput = vec3(1.0f);
     payload.rec = 0;
-
-    payload.pos = CamUBO[frame].iview[3].xyz;
-    payload.dir = getDir(uv);
-    payload.terminate = false;
 
     for (uint i = 0; i < MAX_RAY_DEPTH; i++) {
         payload.rec = i;
@@ -71,14 +72,14 @@ void main() {
             0,                     // sbt offset
             0,                     // sbt stride
             0,                     // miss index
-            payload.pos,           // pos
+            payload.ray.pos,       // pos
             0.0f,                  // min-range
-            payload.dir,           // dir
+            payload.ray.dir,       // dir
             100.0f,                // max-range
             0                      // payload
         );
 
-        if (payload.terminate) {
+        if (payload.ray.terminate) {
             break;
         }
     }
@@ -90,5 +91,6 @@ void main() {
     imageStore(rtTextures[base + 1], imgUV, vec4(accumulated, 1.0f));
 
     vec3 color = accumulated / float(frameCount);
-    imageStore(rtTextures[base], imgUV, vec4(color, 1.0f));
+    vec3 toneMapped = color / (color + 1.0f);
+    imageStore(rtTextures[base], imgUV, vec4(toneMapped, 1.0f));
 }
