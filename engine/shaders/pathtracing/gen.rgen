@@ -73,7 +73,7 @@ void main() {
             0,                     // sbt stride
             0,                     // miss index
             payload.ray.pos,       // pos
-            0.0f,                  // min-range
+            0.01f,                 // min-range
             payload.ray.dir,       // dir
             100.0f,                // max-range
             0                      // payload

@@ -52,7 +52,7 @@ int main() {
     visage::Visage engine;
 
     // load models
-    engine.loadModel("glb_model.glb", {-1.0f, 0.0f, 0.0f}, 300.0f);
+    engine.loadModel("glb_model.glb", {-1.0f, 0.0f, 0.0f}, 5.0f);
 
     // load skybox
     engine.loadSkybox("kloppenheim_02_puresky.hdr");
@@ -62,7 +62,7 @@ int main() {
 
     // configure
     engine.setMouseSensitivity(2.0f);
-    engine.showDebugInfo();
+    // engine.showDebugInfo();
     engine.enableRaytracing();
 
     // initialize engine

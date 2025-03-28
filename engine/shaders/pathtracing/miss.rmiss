@@ -9,5 +9,5 @@ layout(set = 2, binding = 0) uniform samplerCube cubeMap;
 
 void main() {
     payload.ray.terminate = true;
-    // payload.col += texture(cubeMap, gl_WorldRayDirectionEXT).rgb * payload.throughput;
+    payload.col += vec3(1.0f) * payload.throughput;
 }

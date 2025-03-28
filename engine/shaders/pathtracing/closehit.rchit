@@ -168,8 +168,6 @@ void main() {
     vec3 tangent;
     getVertData(index, uv, norm, tangent);
 
-    vec3 frontFacingNormal = dot(norm, rayDir) < 0.0f ? norm : -norm;
-
     // load the textures
     vec4 albedo;
     vec4 metallicRoughness;
@@ -177,7 +175,7 @@ void main() {
     vec3 emissive;
     float occlusion;
 
-    mat3 tbn = getTBN(tangent, mat3(gl_ObjectToWorldEXT), frontFacingNormal);
+    mat3 tbn = getTBN(tangent, mat3(gl_ObjectToWorldEXT), norm);
     getTextures(texIndices[gl_InstanceCustomIndexEXT], uv, tbn, albedo, metallicRoughness, normal, emissive, occlusion);
 
     float roughness = max(metallicRoughness.g, 0.1f);
