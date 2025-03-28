@@ -121,8 +121,9 @@ void VkTextures::loadModelTextures(const tinygltf::Model* model) {
         }
     }
 
-    for (size_t i = 0; i < model->images.size(); i++) {
-        const tinygltf::Image& image = model->images[i];
+    for (size_t i = 0; i < model->textures.size(); i++) {
+        int imageIndex = model->textures[i].source;
+        const tinygltf::Image& image = model->images[imageIndex];
 
         // only images with 4 channels are supported
         int channels = image.component;
@@ -141,7 +142,7 @@ void VkTextures::loadModelTextures(const tinygltf::Model* model) {
 
         MeshTexture meshTexture{};
         meshTexture.imageData = std::move(image.image);
-        meshTexture.type = (imagesSRGB[i]) ? vkh::SRGB : vkh::UNORM;
+        meshTexture.type = (imagesSRGB[imageIndex]) ? vkh::SRGB : vkh::UNORM;
 
         createMeshTexture(meshTexture, image.width, image.height, opaque);
     }

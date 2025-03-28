@@ -53,7 +53,7 @@ void VkScene::loadScene(const std::vector<ModelData>& modelData) {
 
         if (loaded) {
             m_modelFutures.emplace_back(std::async(std::launch::async, &VkScene::loadModel, this, gltfModel, path, m.file, m.scale, m.quat, m.pos, imagesOffset, modelIndex++));
-            imagesOffset += gltfModel.images.size();
+            imagesOffset += gltfModel.textures.size();
         }
     }
 
@@ -363,10 +363,13 @@ void VkScene::loadModel(const tinygltf::Model& gltfModel, const std::string& pat
     uint32_t meshInd = 0;  // index of the mesh in the model
 
     m_objects.reserve(gltfModel.meshes.size());
-    for (const tinygltf::Mesh& mesh : gltfModel.meshes) {
-        dvl::Mesh m = dvl::loadMesh(mesh, gltfModel, parentInd, meshInd++, scale, pos, rot, imagesOffset);
-        m.file = fileName;
-        m_objects.push_back(std::make_unique<dvl::Mesh>(m));
+    for (const tinygltf::Mesh& gltfMesh : gltfModel.meshes) {
+        std::vector<dvl::Mesh> meshes = dvl::loadMesh(gltfMesh, gltfModel, parentInd, meshInd++, scale, pos, rot, imagesOffset);
+
+        for (dvl::Mesh& m : meshes) {
+            m.file = fileName;
+            m_objects.push_back(std::make_unique<dvl::Mesh>(m));
+        }
     }
 
     m_models.push_back(std::make_unique<tinygltf::Model>(gltfModel));

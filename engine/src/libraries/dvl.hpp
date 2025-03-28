@@ -133,13 +133,12 @@ int getNodeIndex(const tinygltf::Model& model, int meshIndex);
 
 dml::mat4 calcMeshWM(const tinygltf::Model& gltfMod, int meshIndex, std::unordered_map<int, int>& parentIndex, Mesh& m);
 
-Mesh loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::unordered_map<int, int>& parentInd, uint32_t meshInd, dml::vec3 scale, dml::vec3 pos, dml::vec4 rot, size_t imagesOffset);
+std::vector<Mesh> loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::unordered_map<int, int>& parentInd, uint32_t meshInd, dml::vec3 scale, dml::vec3 pos, dml::vec4 rot, size_t imagesOffset);
 
 template <typename TinygltfTexture>
 int getImageIndex(const tinygltf::Model& model, const TinygltfTexture& texture, size_t offset) {
     if (texture.index >= 0) {
-        const tinygltf::Texture& tex = model.textures[texture.index];
-        return tex.source + static_cast<int>(offset);
+        return texture.index + static_cast<int>(offset);
     }
 
     // not found
