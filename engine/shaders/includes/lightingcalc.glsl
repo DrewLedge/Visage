@@ -30,6 +30,23 @@ vec3 spotlightEmittedRadience(LightData light, vec3 pos, vec3 lightPos, vec3 fra
 }
 
 #ifdef SHADOWMAP
+
+float pcf(sampler2DArrayShadow shadowMap, vec4 coords) {
+    vec2 size = 1.0f / textureSize(shadowMap, 0).xy;
+
+    float shadow = 0.0f;
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            vec2 newCoords = coords.xy + vec2(x, y) * size;
+            vec4 c = vec4(newCoords.xy, coords.z, coords.w);
+
+            shadow += texture(shadowMap, c);
+        }
+    }
+
+    return shadow / 9.0f;
+}
+
 float getShadowFactor(LightData light, int lightIndex, int frame, vec3 fragPos, int frameCount, int lightsPerBatch) {
     // get the frag pos in light space
     vec4 fragPosLightspace = light.vp * vec4(fragPos, 1.0f);
@@ -48,7 +65,7 @@ float getShadowFactor(LightData light, int lightIndex, int frame, vec3 fragPos, 
     int shadowTexIndex = (batchIndex * frameCount) + frame;
 
     // get the shadow factor
-    return texture(shadowMapSamplers[shadowTexIndex], shadowCoords);
+    return pcf(shadowMapSamplers[shadowTexIndex], shadowCoords);
 }
 
 vec4 calcLighting(vec4 albedo, vec4 metallicRoughness, vec3 normal, vec3 emissive, float occlusion, vec3 fragPos, vec3 viewDir, int frame, int frameCount, int lightCount, int lightsPerBatch) {
