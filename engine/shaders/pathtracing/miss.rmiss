@@ -9,5 +9,7 @@ layout(set = 2, binding = 0) uniform samplerCube cubeMap;
 
 void main() {
     payload.ray.terminate = true;
-    payload.col += vec3(1.0f) * payload.throughput;
+
+    vec3 color = texture(cubeMap, gl_WorldRayDirectionEXT).rgb;
+    payload.col += color * payload.throughput;
 }
