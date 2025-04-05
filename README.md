@@ -27,10 +27,16 @@
 - [TinyGLTF](https://github.com/syoyo/tinygltf)
 - [STB Image](https://github.com/nothings/stb)
 
-## Showcase - Pathtracing
+## Showcase - Pathtracing ON
 <div style="padding-bottom: 20px;">
   <img src="images/showcase1.png">
   <img src="images/showcase2.png">
+</div>
+
+## Showcase - Pathtracing OFF
+<div style="padding-bottom: 20px;">
+  <img src="images/showcase3.png">
+  <img src="images/showcase4.png">
 </div>
 
 **Models used**
