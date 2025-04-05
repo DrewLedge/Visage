@@ -1,8 +1,9 @@
 #include "vk-raytracing.hpp"
 
 namespace raytracing {
-void VkRaytracing::init(uint32_t maxFrames, const VkhCommandPool& commandPool, VkQueue gQueue, VkDevice device, const scene::VkScene* scene) noexcept {
+void VkRaytracing::init(uint32_t maxFrames, const VkhCommandPool& commandPool, VkQueue gQueue, VkDevice device, const scene::VkScene* scene, const textures::VkTextures* textures) noexcept {
     m_scene = scene;
+    m_textures = textures;
 
     m_maxFrames = maxFrames;
     m_commandPool = commandPool;
@@ -58,7 +59,7 @@ void VkRaytracing::updateTLAS(uint32_t currentFrame, bool changed) {
 }
 
 void VkRaytracing::createSBT(const VkhPipeline& rtPipeline, const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rtProperties) {
-    const uint32_t shaderGroupCount = 5;
+    constexpr size_t shaderGroupCount = 5;
 
     // the size of a single shader group handle
     // shader group handles tell the gpu where to find specific shaders
@@ -345,24 +346,22 @@ VkTransformMatrixKHR VkRaytracing::mat4ToVk(const dml::mat4& m) {
 }
 
 void VkRaytracing::createMeshInstace(size_t index) {
-    VkAccelerationStructureInstanceKHR meshInstance{};
-    size_t bufferInd = m_scene->getBufferIndex(index);
+    size_t bufferIndex = m_scene->getBufferIndex(index);
+    size_t objectIndex = m_scene->getUniqueObjectIndex(index);
 
-    // copy the models model matrix into the instance data
+    VkAccelerationStructureInstanceKHR meshInstance{};
+
+    // copy the model matrix into instance data
     const dml::mat4 m = m_scene->getObjectInstances()[index].model;
     meshInstance.transform = mat4ToVk(m);
 
-    VkDeviceAddress blasAddress = vkh::asDeviceAddress(m_blas[bufferInd].blas);
-
-    // populate the instance data
+    // det device address of the blas
+    VkDeviceAddress blasAddress = vkh::asDeviceAddress(m_blas[bufferIndex].blas);
     meshInstance.accelerationStructureReference = blasAddress;
-    meshInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 
-    size_t objectInd = m_scene->getUniqueObjectIndex(index);
-    meshInstance.instanceCustomIndex = static_cast<uint32_t>(objectInd);
-
-    meshInstance.instanceShaderBindingTableRecordOffset = 0;
+    meshInstance.instanceCustomIndex = static_cast<uint32_t>(objectIndex);
     meshInstance.mask = 0xFF;
+
     m_meshInstances.push_back(meshInstance);
 }
 

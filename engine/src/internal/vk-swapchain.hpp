@@ -33,14 +33,11 @@ public:
     [[nodiscard]] uint32_t getHeight() const noexcept { return m_extent.height; }
 
     [[nodiscard]] uint32_t getImageCount() const noexcept { return m_imageCount; }
-    [[nodiscard]] constexpr uint32_t getMaxFrames() const noexcept { return maxFrames; }
 
     [[nodiscard]] uint32_t getImageIndex() const noexcept { return m_imageIndex; }
     [[nodiscard]] uint32_t* getImageIndexP() noexcept { return &m_imageIndex; }
 
 private:
-    static constexpr uint32_t maxFrames = 3;
-
     VkhSwapchainKHR m_swapChain{};
 
     std::vector<VkImage> m_images;

@@ -349,7 +349,7 @@ void VkPipelines::createLightingPipeline() {
 
     // color attachment: specifies the properties of the color image used in the render pass
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_swap->getFormat();                            // format of the color attachment
+    colorAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;                  // format of the color attachment
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;                         // number of samples to use for multisampling
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;                    // what to do with the data in the attachment before rendering
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;                  // what to do with the data in the attachment after rendering
@@ -958,7 +958,7 @@ void VkPipelines::createCompositionPipeline() {
 
     VkPushConstantRange pcRange{};
     pcRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    pcRange.size = sizeof(pushconstants::FramePushConst);
+    pcRange.size = m_rtEnabled ? sizeof(pushconstants::RTPushConst) : sizeof(pushconstants::FramePushConst);
     pcRange.offset = 0;
 
     const std::vector<VkDescriptorSetLayout> layouts = m_descs->getLayouts(descriptorsets::PASSES::COMP);
@@ -998,7 +998,7 @@ void VkPipelines::createCompositionPipeline() {
 void VkPipelines::createRayTracingPipeline() {
     m_rtPipeline.reset();
 
-    const size_t numShaders = 5;
+    constexpr size_t numShaders = 5;
 
     std::vector<std::string> shaderNames;
     shaderNames.push_back("gen.rgen");
@@ -1008,7 +1008,6 @@ void VkPipelines::createRayTracingPipeline() {
     shaderNames.push_back("shadowhit.rchit");
 
     std::vector<VkShaderStageFlagBits> shaderStageFlagBits;
-    ;
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_RAYGEN_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_MISS_BIT_KHR);
     shaderStageFlagBits.push_back(VK_SHADER_STAGE_MISS_BIT_KHR);
@@ -1055,26 +1054,20 @@ void VkPipelines::createRayTracingPipeline() {
     shaderGroups[4].generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups[4].closestHitShader = 4;
 
-    VkPushConstantRange genPCRange{};
-    genPCRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-    genPCRange.offset = 0;
-    genPCRange.size = sizeof(pushconstants::FramePushConst);
-
-    VkPushConstantRange chPCRange{};
-    chPCRange.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-    chPCRange.offset = sizeof(pushconstants::FramePushConst);
-    chPCRange.size = sizeof(pushconstants::LightPushConst);
+    VkPushConstantRange pcRange{};
+    pcRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    pcRange.offset = 0;
+    pcRange.size = sizeof(pushconstants::RTPushConst);
 
     // create the pipeline layoyut
     const std::vector<VkDescriptorSetLayout> layouts = m_descs->getLayouts(descriptorsets::PASSES::RT);
-    const std::array<VkPushConstantRange, 2> ranges = {genPCRange, chPCRange};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-    pipelineLayoutInfo.pPushConstantRanges = ranges.data();
-    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(ranges.size());
+    pipelineLayoutInfo.pPushConstantRanges = &pcRange;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
     VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, m_rtPipeline.layout.p());
     if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to create raytracing pipeline layout!!");
@@ -1083,7 +1076,7 @@ void VkPipelines::createRayTracingPipeline() {
     // create the pipeline
     VkRayTracingPipelineCreateInfoKHR pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-    pipelineInfo.maxPipelineRayRecursionDepth = 2;
+    pipelineInfo.maxPipelineRayRecursionDepth = cfg::MAX_RAY_RECURSION;
     pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pGroups = shaderGroups.data();

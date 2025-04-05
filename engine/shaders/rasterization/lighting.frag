@@ -2,21 +2,17 @@
 
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define RASTERIZATION
-#define FRAG_SHADER
+#define SHADOWMAP
 
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
-#include "../includes/helper.glsl"
-
+#include "../includes/light.glsl"
 layout(set = 1, binding = 0) readonly buffer LightBuffer {
     LightData lights[];
 }
 lssbo[];
 
 layout(set = 2, binding = 0) uniform sampler2DArrayShadow shadowMapSamplers[];
-
-#include "../includes/lightingcalc.glsl"
 
 layout(set = 3, binding = 0) uniform CamBufferObject {
     mat4 view;
@@ -38,6 +34,9 @@ layout(push_constant, std430) uniform PC {
     int frameCount;
     int lightsPerBatch;
 };
+
+#include "../includes/helper.glsl"
+#include "../includes/lightingcalc.glsl"
 
 void main() {
     float depth = texture(depthSampler[inFrame], inTexCoord).r;

@@ -52,8 +52,8 @@ public:
     // scene modification
     void copyModel(const std::string& fileName);
 
-    void createLight(float range);
     void createLight(const dml::vec3& pos, const dml::vec3& target, float range);
+    void createLightAtCamera(float range);
     void createPlayerLight(float range);
 
     void resetScene();
@@ -99,6 +99,7 @@ private:
 
     // frame data
     uint32_t m_currentFrame = 0;
+    uint32_t m_maxFrames = 0;
     uint32_t m_fps = 0;
 
     // descriptor sets and pools
@@ -109,6 +110,7 @@ private:
     std::vector<scene::ModelData> m_modelData;
     std::string m_skybox{};
     bool m_rtEnabled = false;
+    bool m_sceneChanged = false;
     bool m_showDebugInfo = false;
 
     // glfw

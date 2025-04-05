@@ -17,15 +17,10 @@ void VkScene::init(bool rtEnabled, VkDevice device, const VkhCommandPool& comman
 }
 
 void VkScene::loadScene(const std::vector<ModelData>& modelData) {
-    if (m_lightCount == 0) {
-        throw std::runtime_error("No lights have been loaded!");
-    }
-
     auto now = utils::now();
 
     // load models
     utils::sep();
-    std::cout << "- Loading " << modelData.size() << " models...\n";
 
     size_t imagesOffset = 0;
     size_t modelIndex = 0;
@@ -58,7 +53,7 @@ void VkScene::loadScene(const std::vector<ModelData>& modelData) {
 
         if (loaded) {
             m_modelFutures.emplace_back(std::async(std::launch::async, &VkScene::loadModel, this, gltfModel, path, m.file, m.scale, m.quat, m.pos, imagesOffset, modelIndex++));
-            imagesOffset += gltfModel.images.size();
+            imagesOffset += gltfModel.textures.size();
         }
     }
 
@@ -315,12 +310,7 @@ void VkScene::createLight(const dml::vec3& pos, const dml::vec3& target, float r
     m_lightCount++;
 }
 
-void VkScene::createPlayerLight(float range) {
-    createLight({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, range);
-    setPlayerLight(m_lightCount - 1);
-}
-
-void VkScene::setPlayerLight(size_t index) {
+void VkScene::setPlayerLight(int index) {
     if (index >= m_lightCount) {
         throw std::runtime_error("Player index too high!");
     }
@@ -328,16 +318,9 @@ void VkScene::setPlayerLight(size_t index) {
     m_followPlayerIndex = index;
 }
 
-void VkScene::resetLights() {
-    // ensure the follow player index exists (not -1) and isnt 0 to prevent self move
-    if (m_followPlayerIndex > 0) {
-        // move the follow player light to the start and set the light count to 1 to remove all non player following lights
-        m_lights->raw[0] = std::move(m_lights->raw[m_followPlayerIndex]);
-
-        m_followPlayerIndex = 0;
-    }
-
-    m_lightCount = 1;
+void VkScene::removeLights() {
+    m_lightCount = 0;
+    m_followPlayerIndex = -1;
 }
 
 std::vector<size_t> VkScene::getObjectIndices(const std::string& filename) {
@@ -380,10 +363,13 @@ void VkScene::loadModel(const tinygltf::Model& gltfModel, const std::string& pat
     uint32_t meshInd = 0;  // index of the mesh in the model
 
     m_objects.reserve(gltfModel.meshes.size());
-    for (const tinygltf::Mesh& mesh : gltfModel.meshes) {
-        dvl::Mesh m = dvl::loadMesh(mesh, gltfModel, parentInd, meshInd++, scale, pos, rot, imagesOffset);
-        m.file = fileName;
-        m_objects.push_back(std::make_unique<dvl::Mesh>(m));
+    for (const tinygltf::Mesh& gltfMesh : gltfModel.meshes) {
+        std::vector<dvl::Mesh> meshes = dvl::loadMesh(gltfMesh, gltfModel, parentInd, meshInd++, scale, pos, rot, imagesOffset);
+
+        for (dvl::Mesh& m : meshes) {
+            m.file = fileName;
+            m_objects.push_back(std::make_unique<dvl::Mesh>(m));
+        }
     }
 
     m_models.push_back(std::make_unique<tinygltf::Model>(gltfModel));

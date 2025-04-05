@@ -14,8 +14,8 @@ struct LightDataObject {
     dml::mat4 viewProj{};
 
     float intensity = 1.0f;
-    float innerConeAngle = 0.23f;
-    float outerConeAngle = 0.348f;
+    float innerConeAngle = 0.348f;
+    float outerConeAngle = 0.522f;
     float constantAttenuation = 1.0f;
     float linearAttenuation = 0.1f;
     float quadraticAttenuation = 0.032f;

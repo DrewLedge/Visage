@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "config.hpp"
+
 namespace visage {
 void Visage::loadModel(const std::string& file, const dml::vec3& pos, const dml::vec3& scale, const dml::vec4& quat) {
     if (m_engineInitialized) {
@@ -37,11 +39,14 @@ void Visage::initialize() {
     m_vulkanCore = m_setup.init(m_window);
     m_rtEnabled &= m_setup.isRaytracingSupported();
 
+    // disable triple buffering if raytracing is enabled
+    m_maxFrames = m_rtEnabled ? 1 : 3;
+
     // create swapchain
     m_swap.createSwap(m_vulkanCore, m_setup.getGraphicsFamily());
 
     // init renderer
-    m_renderer.init(m_rtEnabled, m_showDebugInfo, m_vulkanCore.device, &m_setup, &m_swap, &m_textures, &m_scene, &m_buffers, &m_descs, &m_pipe, &m_raytracing);
+    m_renderer.init(m_rtEnabled, m_maxFrames, m_showDebugInfo, m_vulkanCore.device, &m_setup, &m_swap, &m_textures, &m_scene, &m_buffers, &m_descs, &m_pipe, &m_raytracing);
     VkhCommandPool commandPool = m_renderer.getCommandPool();
 
     // load scene data
@@ -49,7 +54,7 @@ void Visage::initialize() {
     m_scene.loadScene(m_modelData);
 
     // init textures
-    m_textures.init(commandPool, m_setup.gQueue(), &m_swap, &m_scene);
+    m_textures.init(m_maxFrames, commandPool, m_setup.gQueue(), &m_swap, &m_scene);
     m_textures.loadMeshTextures();
     m_textures.createRenderTextures(m_rtEnabled, true);
 
@@ -61,7 +66,7 @@ void Visage::initialize() {
 
     // setup acceleration structures if raytracing is enabled
     if (m_rtEnabled) {
-        m_raytracing.init(m_swap.getMaxFrames(), commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene);
+        m_raytracing.init(m_maxFrames, commandPool, m_setup.gQueue(), m_vulkanCore.device, &m_scene, &m_textures);
         m_raytracing.createAccelStructures();
     }
 
@@ -69,11 +74,11 @@ void Visage::initialize() {
     m_scene.initSceneData(0.0f, 0.0f, m_swap.getWidth(), m_swap.getHeight());
 
     // create buffers from scene data
-    m_buffers.init(commandPool, m_setup.gQueue(), m_rtEnabled, m_swap.getMaxFrames(), &m_scene);
+    m_buffers.init(commandPool, m_setup.gQueue(), m_rtEnabled, m_maxFrames, &m_scene);
     m_buffers.createBuffers(m_currentFrame);
 
     // init the descriptorsets
-    m_descs.init(m_rtEnabled, m_swap.getMaxFrames(), m_vulkanCore.device, &m_scene, &m_textures, &m_buffers, m_raytracing.tlasData(m_rtEnabled));
+    m_descs.init(m_rtEnabled, m_maxFrames, m_vulkanCore.device, &m_scene, &m_textures, &m_buffers, m_raytracing.tlasData(m_rtEnabled));
 
     // init the pipelines
     m_pipe.init(m_rtEnabled, m_vulkanCore.device, &m_swap, &m_textures, &m_descs);
@@ -100,15 +105,22 @@ void Visage::initialize() {
 }
 
 void Visage::render() {
-    MouseObject* mouse = MouseSingleton::v().getMouse();
-    m_mouseUp = mouse->upAngle;
-    m_mouseRight = mouse->rightAngle;
+    bool mouseChanged = MouseSingleton::v().mouseChanged();
+    m_sceneChanged |= mouseChanged;
 
-    m_scene.updateCamQuaternion(m_mouseUp, m_mouseRight);
+    if (mouseChanged) {
+        MouseObject* mouse = MouseSingleton::v().getMouse();
+        m_mouseUp = mouse->upAngle;
+        m_mouseRight = mouse->rightAngle;
+
+        m_scene.updateCamQuaternion(m_mouseUp, m_mouseRight);
+    }
 
     calcFps();
     glfwPollEvents();
     drawFrame();
+
+    m_sceneChanged = false;
 }
 
 void Visage::lockMouse(bool locked) {
@@ -131,6 +143,7 @@ void Visage::lockMouse(bool locked) {
 }
 
 void Visage::translateCamForward(float speed) {
+    m_sceneChanged = true;
     dml::vec3 forward = m_scene.getCamForward();
 
     dml::vec3& pos = m_scene.getCamPos();
@@ -138,6 +151,7 @@ void Visage::translateCamForward(float speed) {
 }
 
 void Visage::translateCamRight(float speed) {
+    m_sceneChanged = true;
     dml::vec3 forward = m_scene.getCamForward();
     dml::vec3 right = m_scene.getCamRight(forward);
 
@@ -146,11 +160,13 @@ void Visage::translateCamRight(float speed) {
 }
 
 void Visage::translateCamVertically(float speed) {
+    m_sceneChanged = true;
     dml::vec3& pos = m_scene.getCamPos();
     pos.y += speed;
 }
 
 void Visage::copyModel(const std::string& fileName) {
+    m_sceneChanged = true;
     const dml::mat4& view = m_scene.getCamMatrices()->view;
     dml::vec3 pos = dml::getCamWorldPos(view);
 
@@ -168,76 +184,68 @@ void Visage::copyModel(const std::string& fileName) {
     }
 }
 
-void Visage::createLight(float range) {
+void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float range) {
+    m_sceneChanged = true;
+    size_t currentLightCount = m_scene.getLightCount();
+    size_t batchCount = m_scene.getShadowBatchCount();
+    size_t newLightCount = currentLightCount + 1;
+
+    // limit lights spawned
+    if (newLightCount > cfg::MAX_LIGHTS) return;
+
+    m_scene.createLight(pos, target, range);
+
+    // if the engine is initialzed, raytracing is disabled, and a new shadow batch needs to be created
+    bool newShadowBatch = (currentLightCount == 0) ? true : (newLightCount % cfg::LIGHTS_PER_BATCH == 0);
+    if (m_engineInitialized && !m_rtEnabled && newShadowBatch) {
+        vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
+
+        m_textures.createNewShadowBatch();
+
+        for (size_t i = 0; i < m_maxFrames; i++) {
+            vkh::Texture s = m_textures.getShadowTex(batchCount, i);
+
+            m_renderer.addShadowFrameBuffer(s);
+            m_renderer.addShadowCommandBuffers();
+            m_descs.addShadowInfo(vkh::createDSImageInfo(s.imageView, s.sampler));
+        }
+
+        m_descs.updateLightDS();
+    }
+}
+
+void Visage::createLightAtCamera(float range) {
     dml::vec3 pos = m_scene.getCamWorldPos();
     dml::vec3 target = pos + m_scene.getCamForward();
 
     createLight(pos, target, range);
 }
 
-void Visage::createLight(const dml::vec3& pos, const dml::vec3& target, float range) {
-    size_t currentLightCount = m_scene.getLightCount();
-    size_t newLightCount = currentLightCount + 1;
-    if (newLightCount > cfg::MAX_LIGHTS) return;
-
-    if (m_engineInitialized) {
-        vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
-
-        if (!m_rtEnabled && m_textures.newShadowBatchNeeded(currentLightCount, newLightCount)) {
-            m_textures.createNewShadowBatch();
-
-            for (size_t i = 0; i < m_swap.getMaxFrames(); i++) {
-                vkh::Texture s = m_textures.getShadowTex(m_scene.getShadowBatchCount(), i);
-
-                m_renderer.addShadowFrameBuffer(s);
-                m_renderer.addShadowCommandBuffers();
-                m_descs.addShadowInfo(vkh::createDSImageInfo(s.imageView, s.sampler));
-            }
-
-            m_descs.updateLightDS();
-        }
-    }
-
-    m_scene.createLight(pos, target, range);
-}
-
 void Visage::createPlayerLight(float range) {
-    m_scene.createPlayerLight(range);
+    createLightAtCamera(range);
+    m_scene.setPlayerLight(static_cast<int>(m_scene.getLightCount()) - 1);
 }
 
 void Visage::resetScene() {
+    m_sceneChanged = true;
     vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
 
-    m_scene.resetLights();
-
-    uint32_t maxFrames = m_swap.getMaxFrames();
-
+    // remove lights
+    m_scene.removeLights();
     if (!m_rtEnabled) {
-        m_renderer.reallocateLights();
-
-        m_descs.clearShadowInfos(maxFrames);
-
+        m_renderer.freeLights();
+        m_descs.clearShadowInfos();
         m_textures.resetShadowTextures();
-
-        for (size_t i = 0; i < maxFrames; i++) {
-            const vkh::Texture& tex = m_textures.getShadowTex(m_scene.getShadowBatchCount() - 1, i);
-
-            m_descs.addShadowInfo(vkh::createDSImageInfo(tex.imageView, tex.sampler));
-            m_renderer.addShadowFrameBuffer(tex);
-        }
-
-        m_descs.updateLightDS();
     }
 
+    // reset objects
     m_scene.resetObjects();
-
-    if (m_rtEnabled) {
-        m_raytracing.updateTLAS(m_currentFrame, true);
-    }
-
     m_scene.calcTexIndices();
     m_buffers.createTexIndicesBuffer();
     m_buffers.updateSceneIndirectCommandsBuffer();
+    if (m_rtEnabled) {
+        m_raytracing.updateTLAS(m_currentFrame, true);
+    }
 }
 
 void Visage::initGLFW() {
@@ -381,7 +389,7 @@ void Visage::recreateSwap() {
 
 void Visage::drawFrame() {
     // get next frame
-    m_currentFrame = (m_currentFrame + 1) % m_swap.getMaxFrames();
+    m_currentFrame = (m_maxFrames == 1) ? 0 : (m_currentFrame + 1) % m_maxFrames;
 
     // wait for and reset fences
     vkWaitForFences(m_vulkanCore.device, 1, m_renderer.getFence(m_currentFrame), VK_TRUE, UINT64_MAX);
@@ -403,7 +411,7 @@ void Visage::drawFrame() {
     }
 
     // record command buffers and draw the frame
-    VkResult drawFrameResult = m_renderer.drawFrame(m_currentFrame, static_cast<float>(m_fps));
+    VkResult drawFrameResult = m_renderer.drawFrame(m_currentFrame, static_cast<float>(m_fps), m_sceneChanged);
 
     // check if the swap chain is out of date (window was resized, etc):
     if (drawFrameResult == VK_ERROR_OUT_OF_DATE_KHR || drawFrameResult == VK_SUBOPTIMAL_KHR) {

@@ -2,8 +2,7 @@
 
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define RASTERIZATION
-#define FRAG_SHADER
+#define SHADOWMAP
 
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
@@ -11,18 +10,16 @@ layout(set = 2, binding = 0) uniform sampler2DArrayShadow shadowMapSamplers[];
 
 layout(set = 4, binding = 0) uniform sampler2D depthSamplers[];
 
-#include "../includes/helper.glsl"
-
+#include "../includes/light.glsl"
 layout(set = 1, binding = 0) readonly buffer LightBuffer {
     LightData lights[];
 }
 lssbo[];
 
+#include "../includes/texindices.glsl"
 layout(set = 5, binding = 0) readonly buffer TexIndexBuffer {
     TexIndices texIndices[];
 };
-
-#include "../includes/lightingcalc.glsl"
 
 layout(location = 0) in vec2 inTexCoord;
 layout(location = 1) in vec3 inFragPos;
@@ -45,6 +42,10 @@ float getWeight(float z, float a) {
     float weight = a * exp(-z);
     return 1.0f - weight;
 }
+
+#include "../includes/helper.glsl"
+#include "../includes/lightingcalc.glsl"
+#include "../includes/loadtextures.glsl"
 
 void main() {
     // load the textures

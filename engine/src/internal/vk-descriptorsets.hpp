@@ -39,10 +39,10 @@ public:
     [[nodiscard]] std::vector<VkDescriptorSet> getSets(PASSES pass) const;
 
     // shadow infos
-    void clearShadowInfos(uint32_t newSize) {
+    void clearShadowInfos() {
         m_shadowInfos.clear();
-        m_shadowInfos.reserve(newSize);
     }
+
     void addShadowInfo(VkDescriptorImageInfo shadowInfo) { m_shadowInfos.push_back(shadowInfo); }
 
 private:

@@ -2,11 +2,9 @@
 
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define FRAG_SHADER
-
 layout(set = 0, binding = 0) uniform sampler2D texSamplers[];
 
-#include "../includes/helper.glsl"
+#include "../includes/texindices.glsl"
 
 layout(set = 1, binding = 0) readonly buffer TexIndexBuffer {
     TexIndices texIndices[];
@@ -20,6 +18,8 @@ layout(location = 0) out vec4 outAlbedo;
 layout(location = 1) out vec4 outMetallicRoughness;
 layout(location = 2) out vec4 outNormal;
 layout(location = 3) out vec4 outEmissiveAO;
+
+#include "../includes/loadtextures.glsl"
 
 void main() {
     // load the textures

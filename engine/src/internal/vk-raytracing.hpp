@@ -7,6 +7,7 @@
 #include "libraries/vkhelper.hpp"
 #include "structures/raytracing.hpp"
 #include "vk-scene.hpp"
+#include "vk-textures.hpp"
 
 namespace raytracing {
 class VkRaytracing {
@@ -18,7 +19,7 @@ public:
     VkRaytracing(VkRaytracing&&) = delete;
     VkRaytracing& operator=(VkRaytracing&&) = delete;
 
-    void init(uint32_t maxFrames, const VkhCommandPool& commandPool, VkQueue gQueue, VkDevice device, const scene::VkScene* scene) noexcept;
+    void init(uint32_t maxFrames, const VkhCommandPool& commandPool, VkQueue gQueue, VkDevice device, const scene::VkScene* scene, const textures::VkTextures* textures) noexcept;
     void createAccelStructures();
     void updateTLAS(uint32_t currentFrame, bool changed);
     void createSBT(const VkhPipeline& rtPipeline, const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rtProperties);
@@ -38,6 +39,7 @@ private:
     std::vector<VkAccelerationStructureInstanceKHR> m_meshInstances;
 
     const scene::VkScene* m_scene = nullptr;
+    const textures::VkTextures* m_textures = nullptr;
 
     uint32_t m_maxFrames = 0;
     VkDevice m_device{};

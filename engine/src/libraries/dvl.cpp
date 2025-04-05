@@ -156,15 +156,21 @@ dml::mat4 calcMeshWM(const tinygltf::Model& gltfMod, int meshIndex, std::unorder
     return modelMatrix * localModelMatrix;
 }
 
-Mesh loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::unordered_map<int, int>& parentInd, uint32_t meshInd, dml::vec3 scale, dml::vec3 pos, dml::vec4 rot, size_t imagesOffset) {
-    Mesh newObject;
+std::vector<Mesh> loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::unordered_map<int, int>& parentInd, uint32_t meshInd, dml::vec3 scale, dml::vec3 pos, dml::vec4 rot, size_t imagesOffset) {
+    std::vector<Mesh> newObjects;
 
-    std::unordered_map<Vertex, uint32_t, VertHash> uniqueVertices;
-    std::vector<Vertex> tempVertices;
-    std::vector<uint32_t> tempIndices;
+    size_t primitiveCount = mesh.primitives.size();
+    newObjects.reserve(primitiveCount);
 
     // process primitives in the mesh
-    for (const tinygltf::Primitive& primitive : mesh.primitives) {
+    for (size_t i = 0; i < primitiveCount; i++) {
+        const tinygltf::Primitive& primitive = mesh.primitives[i];
+        Mesh object{};
+
+        std::unordered_map<Vertex, uint32_t, VertHash> uniqueVertices;
+        std::vector<Vertex> tempVertices;
+        std::vector<uint32_t> tempIndices;
+
         const float* positionData = getAccessorData(model, primitive.attributes, "POSITION");
         const float* texCoordData = getAccessorData(model, primitive.attributes, "TEXCOORD_0");
         const float* normalData = getAccessorData(model, primitive.attributes, "NORMAL");
@@ -200,18 +206,18 @@ Mesh loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::uno
             }
         }
 
-        for (size_t i = 0; i < indexAccessor.count; i++) {
+        for (size_t j = 0; j < indexAccessor.count; j++) {
             uint32_t index;  // use the largest type to ensure no overflow
 
             switch (indexAccessor.componentType) {
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                    index = static_cast<const uint8_t*>(rawIndices)[i];
+                    index = static_cast<const uint8_t*>(rawIndices)[j];
                     break;
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                    index = static_cast<const uint16_t*>(rawIndices)[i];
+                    index = static_cast<const uint16_t*>(rawIndices)[j];
                     break;
                 case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                    index = static_cast<const uint32_t*>(rawIndices)[i];
+                    index = static_cast<const uint32_t*>(rawIndices)[j];
                     break;
                 default:
                     continue;  // skip this iteration
@@ -245,27 +251,29 @@ Mesh loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, std::uno
             material.emissiveMap = getImageIndex(model, tinygltfMaterial.emissiveTexture, imagesOffset);
             material.occlusionMap = getImageIndex(model, tinygltfMaterial.occlusionTexture, imagesOffset);
 
-            newObject.material = material;
+            object.material = material;
         }
+
+        object.vertices = tempVertices;
+        object.indices = tempIndices;
+
+        size_t hash1 = std::hash<std::size_t>{}(meshInd * tempIndices.size() * tempVertices.size() + i);
+        size_t hash2 = std::hash<std::string>{}(mesh.name);
+
+        object.meshHash = utils::combineHashes(hash1, hash2);
+
+        object.name = mesh.name;
+
+        object.scale = scale;
+        object.position = pos;
+        object.rotation = rot;
+
+        // calculate the model matrix for the mesh
+        object.modelMatrix = calcMeshWM(model, meshInd, parentInd, object);
+
+        newObjects.push_back(object);
     }
 
-    newObject.vertices = tempVertices;
-    newObject.indices = tempIndices;
-
-    size_t hash1 = std::hash<std::size_t>{}(meshInd * tempIndices.size() * tempVertices.size());
-    size_t hash2 = std::hash<std::string>{}(mesh.name);
-
-    newObject.meshHash = utils::combineHashes(hash1, hash2);
-
-    newObject.name = mesh.name;
-
-    newObject.scale = scale;
-    newObject.position = pos;
-    newObject.rotation = rot;
-
-    // calculate the model matrix for the mesh
-    newObject.modelMatrix = calcMeshWM(model, meshInd, parentInd, newObject);
-
-    return newObject;
+    return newObjects;
 }
 };  // namespace dvl

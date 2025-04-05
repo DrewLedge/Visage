@@ -2,8 +2,9 @@
 
 #extension GL_EXT_ray_tracing : require
 
-layout(location = 1) rayPayloadInEXT bool shadowPayload;
+#include "../includes/raypayloads.glsl"
+layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
-    shadowPayload = true;
+    shadowPayload.shadow = true;
 }

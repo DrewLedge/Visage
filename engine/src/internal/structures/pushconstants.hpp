@@ -14,6 +14,7 @@ struct LightPushConst {
 struct RTPushConst {
     int frame;
     int lightCount;
+    uint32_t frameCount;
 };
 
 struct ShadowPushConst {

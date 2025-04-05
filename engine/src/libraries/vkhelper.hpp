@@ -282,6 +282,8 @@ typedef enum {
     SRGB,
     UNORM,
     DEPTH,
+    SFLOAT16,
+    SFLOAT32,
     CUBEMAP,
     ALPHA
 } TextureType;
@@ -302,14 +304,15 @@ struct Texture {
     VkhImage image{};
     VkhDeviceMemory memory{};
     VkhImageView imageView{};
-    vkh::BufferObj stagingBuffer{};
+    BufferObj stagingBuffer{};
 
     // image data
     VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
-    uint16_t width = 1024;
-    uint16_t height = 1024;
+    uint32_t width = 1024;
+    uint32_t height = 1024;
     uint32_t mipLevels = 1;
     uint32_t arrayLayers = 1;
+    bool fullyOpaque = false;
 
     // consuructors
     Texture() = default;
@@ -356,6 +359,13 @@ struct SCsupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct LayoutTransition {
+    VkAccessFlags srcAccessMask;
+    VkAccessFlags dstAccessMask;
+    VkPipelineStageFlags srcStage;
+    VkPipelineStageFlags dstStage;
+};
+
 // -------------------- SWAP CHAIN -------------------- //
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
@@ -381,9 +391,7 @@ void createFB(const VkhRenderPass& renderPass, VkhFramebuffer& frameBuf, const V
 VkhSemaphore createSemaphore();
 
 VkSubmitInfo createSubmitInfo(const VkCommandBuffer* commandBuffers, size_t commandBufferCount);
-
 VkSubmitInfo createSubmitInfo(const VkCommandBuffer* commandBuffers, size_t commandBufferCount, const VkPipelineStageFlags* waitStages, const VkhSemaphore& wait, const VkhSemaphore& signal);
-
 VkSubmitInfo createSubmitInfo(const VkCommandBuffer* commandBuffers, size_t commandBufferCount, const VkPipelineStageFlags* waitStages, const VkSemaphore* wait, const VkSemaphore* signal, size_t waitSemaphoreCount, size_t signalSemaphoreCount);
 
 // -------------------- MEMORY -------------------- //
@@ -406,23 +414,23 @@ void createDeviceLocalBuffer(BufferObj& buffer, VkDeviceSize size, VkBufferUsage
 // -------------------- IMAGES -------------------- //
 VkFormat findDepthFormat();
 
-void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const VkhImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t layerCount, uint32_t levelCount, uint32_t baseMip);
+LayoutTransition getLayoutTransition(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-void transitionImageLayout(VkhCommandPool& commandPool, VkQueue graphicsQueue, const VkhImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t layerCount, uint32_t levelCount, uint32_t baseMip);
+void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const VkhImage& image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t layerCount, uint32_t levelCount, uint32_t baseMip);
+void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const Texture& tex, TextureType textureType, VkImageLayout oldLayout, VkImageLayout newLayout);
+void transitionImageLayout(const VkhCommandBuffer& commandBuffer, const Texture& tex, TextureType textureType, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t baseMip);
 
 void createImage(VkhImage& image, VkhDeviceMemory& imageMemory, uint32_t width, uint32_t height, VkFormat format, uint32_t mipLevels, uint32_t arrayLayers, bool cubeMap, VkImageUsageFlags usage, VkSampleCountFlagBits sample);
-
 void createImage(VkhImage& image, VkhDeviceMemory& imageMemory, uint32_t width, uint32_t height, TextureType textureType, uint32_t mipLevels, uint32_t arrayLayers, bool cubeMap, VkImageUsageFlags usage, VkSampleCountFlagBits sample);
-
-void createImageView(Texture& tex, TextureType type);
-
-void createImageView(Texture& tex, VkFormat format);
 
 void createSampler(VkhSampler& sampler, uint32_t mipLevels, TextureType type);
 
-void copyImage(VkhImage& srcImage, VkhImage& dstImage, VkImageLayout srcStart, VkImageLayout dstStart, VkImageLayout dstAfter, const VkhCommandBuffer& commandBuffer, VkFormat format, uint32_t width, uint32_t height, bool color);
+void createImageView(Texture& tex, TextureType type);
+void createImageView(Texture& tex, VkFormat format);
 
-void copyImage(VkhCommandPool& commandPool, VkQueue graphicsQueue, VkhImage& srcImage, VkhImage& dstImage, VkImageLayout srcStart, VkImageLayout dstStart, VkImageLayout dstAfter, VkFormat format, uint32_t width, uint32_t height, bool color);
+void createTexture(Texture& tex, TextureType textureType, VkImageUsageFlags usage, uint32_t width, uint32_t height);
+
+void createSwapTexture(Texture& tex, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height);
 
 VkFormat getTextureFormat(TextureType textureType);
 

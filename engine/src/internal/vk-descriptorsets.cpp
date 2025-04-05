@@ -63,15 +63,19 @@ void VkDescriptorSets::update(bool updateLights, const VkAccelerationStructureKH
     std::vector<VkDescriptorImageInfo> depthInfo{};
 
     // raytracing
-    std::vector<VkDescriptorImageInfo> rtPresentTextures{};
+    std::vector<VkDescriptorImageInfo> rtTextures{};
     VkWriteDescriptorSetAccelerationStructureKHR tlasInfo{};
 
     if (m_rtEnabled) {
-        rtPresentTextures.reserve(m_maxFrames);
+        rtTextures.reserve(m_maxFrames);
 
         for (size_t i = 0; i < m_maxFrames; i++) {
-            const vkh::Texture& rt = m_textures->getRTTex(i);
-            rtPresentTextures.push_back(vkh::createDSImageInfo(rt.imageView, rt.sampler, VK_IMAGE_LAYOUT_GENERAL));
+            for (size_t j = 0; j < 2; j++) {
+                size_t k = (i * 2) + j;
+
+                const vkh::Texture& rt = m_textures->getRTTex(k);
+                rtTextures.push_back(vkh::createDSImageInfo(rt.imageView, rt.sampler, VK_IMAGE_LAYOUT_GENERAL));
+            }
         }
 
         tlasInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
@@ -85,6 +89,7 @@ void VkDescriptorSets::update(bool updateLights, const VkAccelerationStructureKH
         if (updateLights) {
             size_t batchCount = m_scene->getShadowBatchCount();
             m_shadowInfos.reserve(m_maxFrames * batchCount);
+
             for (size_t i = 0; i < batchCount; i++) {
                 for (size_t j = 0; j < m_maxFrames; j++) {
                     const vkh::Texture& tex = m_textures->getShadowTex(i, j);
@@ -113,11 +118,16 @@ void VkDescriptorSets::update(bool updateLights, const VkAccelerationStructureKH
 
     std::vector<VkWriteDescriptorSet> descriptorWrites{};
     if (m_rtEnabled) {
-        descriptorWrites.push_back(vkh::createDSWrite(m_sets[RT].set, 0, m_sets[RT].bindings[0].descriptorType, rtPresentTextures.data(), rtPresentTextures.size()));
+        descriptorWrites.push_back(vkh::createDSWrite(m_sets[RT].set, 0, m_sets[RT].bindings[0].descriptorType, rtTextures.data(), rtTextures.size()));
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[TLAS].set, 0, m_sets[TLAS].bindings[0].descriptorType, &tlasInfo, m_maxFrames));
     } else {
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[DEFERRED].set, 0, m_sets[DEFERRED].bindings[0].descriptorType, deferredImageInfo.data(), deferredImageInfo.size()));
-        if (updateLights) descriptorWrites.push_back(vkh::createDSWrite(m_sets[SHADOWMAP].set, 0, m_sets[SHADOWMAP].bindings[0].descriptorType, m_shadowInfos.data(), m_shadowInfos.size()));
+
+        // if any lights are loaded
+        if (updateLights && m_shadowInfos.size() > 0) {
+            descriptorWrites.push_back(vkh::createDSWrite(m_sets[SHADOWMAP].set, 0, m_sets[SHADOWMAP].bindings[0].descriptorType, m_shadowInfos.data(), m_shadowInfos.size()));
+        }
+
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[CAMDEPTH].set, 0, m_sets[CAMDEPTH].bindings[0].descriptorType, depthInfo.data(), depthInfo.size()));
         descriptorWrites.push_back(vkh::createDSWrite(m_sets[COMPTEXTURES].set, 0, m_sets[COMPTEXTURES].bindings[0].descriptorType, compositionPassImageInfo.data(), compositionPassImageInfo.size()));
     }
@@ -205,7 +215,7 @@ void VkDescriptorSets::initDSInfo() {
 
     uint32_t deferredColorCount = static_cast<uint32_t>(m_textures->getDeferredColorCount());
 
-    createDescriptorInfo(m_sets[RT], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_maxFrames);
+    createDescriptorInfo(m_sets[RT], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_FRAGMENT_BIT, 0, m_maxFrames * 2);
     createDescriptorInfo(m_sets[TLAS], VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, m_maxFrames);
 
     createDescriptorInfo(m_sets[TEXINDICES], VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, textursSS, 0, cfg::MAX_OBJECTS);

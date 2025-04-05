@@ -26,13 +26,13 @@ public:
     VkRenderer(VkRenderer&&) = delete;
     VkRenderer& operator=(VkRenderer&&) = delete;
 
-    void init(bool rtEnabled, bool showDebugInfo, VkDevice device, const setup::VkSetup* setup, const swapchain::VkSwapChain* swap, const textures::VkTextures* textures, const scene::VkScene* scene, const buffers::VkBuffers* buffers, const descriptorsets::VkDescriptorSets* descs, const pipelines::VkPipelines* pipelines, const raytracing::VkRaytracing* raytracing) noexcept;
+    void init(bool rtEnabled, uint32_t maxFrames, bool showDebugInfo, VkDevice device, const setup::VkSetup* setup, const swapchain::VkSwapChain* swap, const textures::VkTextures* textures, const scene::VkScene* scene, const buffers::VkBuffers* buffers, const descriptorsets::VkDescriptorSets* descs, const pipelines::VkPipelines* pipelines, const raytracing::VkRaytracing* raytracing) noexcept;
     void createCommandBuffers();
     void createFrameBuffers(bool shadow);
-    [[nodiscard]] VkResult drawFrame(uint32_t currentFrame, float fps);
+    [[nodiscard]] VkResult drawFrame(uint32_t currentFrame, float fps, bool sceneChanged);
 
     // lights
-    void reallocateLights();
+    void freeLights();
     void addShadowFrameBuffer(const vkh::Texture& tex);
     void addShadowCommandBuffers();
 
@@ -86,11 +86,13 @@ private:
 
     // other
     bool m_rtEnabled = false;
+    uint32_t m_maxFrames = 0;
     bool m_showDebugInfo = false;
 
     VkDevice m_device{};
     uint32_t m_currentFrame = 0;
     float m_fps = 0.0f;
+    bool m_sceneChanged = false;
 
 private:
     void setupFences();
