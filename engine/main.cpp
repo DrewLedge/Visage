@@ -55,14 +55,14 @@ int main() {
     engine.loadModel("glb_model.glb", {-1.0f, 0.0f, 0.0f}, 5.0f);
 
     // load skybox
-    engine.loadSkybox("kloppenheim_02_puresky.hdr");
+    engine.loadSkybox("industrial_sunset_02_puresky.hdr");
 
     // create player following light
     engine.createPlayerLight(5.0f);
 
     // configure
     engine.setMouseSensitivity(2.0f);
-    // engine.showDebugInfo();
+    engine.showDebugInfo();
     engine.enableRaytracing();
 
     // initialize engine
