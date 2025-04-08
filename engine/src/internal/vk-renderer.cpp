@@ -247,7 +247,7 @@ void VkRenderer::renderImguiFrame(VkhCommandBuffer& commandBuffer) {
     text.push_back("FPS: " + std::to_string(static_cast<int>(m_fps)));
     text.push_back("Objects: " + std::to_string(m_scene->getObjectCount()));
     text.push_back("Lights: " + std::to_string(m_scene->getLightCount()));
-    text.push_back("Raytracing: " + std::string(m_rtEnabled ? "ON" : "OFF"));
+    text.push_back("Path tracing: " + std::string(m_rtEnabled ? "ON" : "OFF"));
 
     // render the frame
     if (ImGui::Begin("Info", nullptr, flags)) {
